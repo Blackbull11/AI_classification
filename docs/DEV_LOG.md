@@ -139,19 +139,19 @@
 
 ---
 
-### 2026-06-16 — Autonomy Scatter: compact grouped view
+### 2026-06-16 — Autonomy Scatter: compact grouped view (completed)
 
-**Summary**: Redesigned the Autonomy Scatter plot for compactness and interactivity. Agents sharing the same autonomy tier AND stage coverage pattern collapse into a single bar ("slot"). Single-agent bars show the name inside the pill (click → profile). Multi-agent bars show "×N agents" and a count badge (click → expands a detail panel below the SVG listing all agents as clickable chips). Labels now live inside bars using advantage-based text colors (contrast-adjusted for complexity fill). Row height reduced from 34 px to 26 px.
+**Summary**: Completed the grouped-slot redesign of the Autonomy Scatter. Agents sharing the same autonomy tier AND exact stage coverage pattern now collapse into one bar ("slot"). Single-member bars show the agent name; multi-member bars show "FirstName +N" label + click → detail panel listing all agents as clickable chips. Bars are colored by dominant complexity tier, with text color chosen by advantage using light/dark contrast logic. Row count is dramatically lower than the per-agent version (e.g. ~77 agents → ~30 distinct patterns). Detail panel with `#scatterDetailPanel` + `showDetail()` + `window._closeScatterDetail` is fully wired. Greedy row-packing uses slots not individual agents.
 
 **Files changed**:
-- `ai_agent_classifier/templates/matrix.html` — rewrote `renderScatter()` with slot-grouping, compact layout, in-bar labels, count badges; added `#scatterDetailPanel` HTML
-- `ai_agent_classifier/static/css/style.css` — added `.scatter-detail-panel`, `.scatter-detail-badge` and related styles
+- `ai_agent_classifier/templates/matrix.html` — complete replacement of `renderScatter()` body with slot-based grouping; per-agent `items` array → `slotMap` → `slots` → `bands`; `showDetail()` and `_closeScatterDetail` restored; band label shows total agent count not slot count; row index bug fixed (`indexOf` → `ri` parameter)
 
 **Design decisions**:
-- Grouping key: `(autonomy, sorted_stage_indices)` — exact same stage set collapses
+- Grouping key: `(autonomy, sorted_stage_indices)` — exact same stage pattern collapses
 - Fill = dominant complexity of slot members; if mixed → warm neutral `#B0A080`
-- Text color = advantage color, dark palette on dark fills, light palette on light fills
-- `window._closeScatterDetail` assigned at render time for close button onclick
+- Text color = advantage color, dark palette (`ADV_ON_DARK`) on dark fills, light palette (`ADV_ON_LIGHT`) on light fills
+- Multi-member slot border is slightly thicker (stroke-width 2) to signal grouping
+- `window._closeScatterDetail` assigned at SVG render time so the HTML close button `onclick` always reaches the current function
 
 ---
 

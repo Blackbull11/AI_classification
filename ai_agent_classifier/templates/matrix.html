@@ -296,11 +296,16 @@
 <!-- Stage × Advantage Matrix -->
 <div id="advMatrixView" class="matrix-widget mb-4" style="display:none">
   <div class="matrix-legend">
-    <span class="legend-label">Complexity box:</span>
-    <span class="legend-cx-item legend-cx-black">Black Swan</span>
-    <span class="legend-cx-item legend-cx-dark-grey">Dark Grey</span>
-    <span class="legend-cx-item legend-cx-light-grey">Light Grey</span>
-    <span class="legend-cx-item legend-cx-white">White Swan</span>
+    <span class="legend-label">Cell lines (advantage):</span>
+    <span class="legend-item legend-beh">Behavioral</span>
+    <span class="legend-item legend-ana">Analytical</span>
+    <span class="legend-item legend-inf">Informational</span>
+    <span class="legend-sep">·</span>
+    <span class="legend-label">Label color (complexity):</span>
+    <span class="legend-cx-text legend-cx-text-black">Black Swan</span>
+    <span class="legend-cx-text legend-cx-text-dark-grey">Dark Grey</span>
+    <span class="legend-cx-text legend-cx-text-light-grey">Light Grey</span>
+    <span class="legend-cx-text legend-cx-text-white">White Swan</span>
     <span class="legend-sep">·</span>
     <span class="legend-item legend-type-com">Commercial</span>
     <span class="legend-item legend-type-inh">In-house</span>
@@ -331,7 +336,7 @@
       </thead>
       <tbody>
         {% for adv_key, adv_label in advantages %}
-          <tr>
+          <tr class="adv-row-{{ adv_key }}">
             <td class="label-cell lc-adv lc-adv-{{ adv_key }}">
               <div class="cx-label-text">
                 <span class="cx-name fw-bold">{{ adv_label }}</span>
@@ -353,8 +358,7 @@
                         {%- set agt_type = agent.agent_type -%}
                         <a href="{{ agent.url or '#' }}"
                            target="_blank" rel="noopener"
-                           class="agent-badge badge-{{ adv_type }}-{{ agt_type }} badge-has-cx">
-                          <span class="cx-mini cx-mini-{{ agent.complexity or 'white' }}"></span>{{ agent.name }}</a>
+                           class="agent-badge badge-{{ adv_type }}-{{ agt_type }}">{{ agent.name }}</a>
                         <div class="badge-hover-card">
                           <div class="bhc-name">{{ agent.name }}</div>
                           <div class="bhc-meta">
@@ -414,9 +418,16 @@
     <span class="legend-item legend-beh">Behavioral</span>
     <span class="legend-item legend-ana">Analytical</span>
     <span class="legend-item legend-inf">Informational</span>
-    <span class="scatter-hint">Higher position = more autonomous · hover for details · click to open agent profile</span>
+    <span class="scatter-hint">Higher = more autonomous · same stage pattern → one bar · click single bar to open profile · grouped bar → expand list</span>
   </div>
   <div id="scatterSvgContainer"></div>
+  <div id="scatterDetailPanel" class="scatter-detail-panel mt-2" style="display:none">
+    <div class="scatter-detail-header">
+      <span id="scatterDetailTitle" class="scatter-detail-title"></span>
+      <button class="scatter-detail-close" onclick="_closeScatterDetail()">✕ Close</button>
+    </div>
+    <div id="scatterDetailContent" class="scatter-detail-content"></div>
+  </div>
 </div>
 <div class="scatter-tooltip" id="scatterTooltip"></div>
 
@@ -735,11 +746,10 @@ if (quickAddForm) {
   }
 
   function renderScatter(agents) {
-    const AU_ORDER  = { full: 0, high: 1, medium: 2, low: 3 };
-    const AU_COLORS = { full: '#C04848', high: '#9868A8', medium: '#6478C0', low: '#3A9888' };
-    const AU_LBLS   = { full: ['FULLY','AUTON.'], high: ['HIGH',null], medium: ['MEDIUM',null], low: ['LOW',null] };
-    const ADV_ON_DARK  = { behavioral:'#E07060', analytical:'#30C890', informational:'#F0B040' };
-    const ADV_ON_LIGHT = { behavioral:'#7A1800', analytical:'#00502C', informational:'#7A5000' };
+    const AU_COLORS = { full:'#C04848', high:'#9868A8', medium:'#6478C0', low:'#3A9888' };
+    const AU_LBLS   = { full:['FULLY','AUTON.'], high:['HIGH',null], medium:['MEDIUM',null], low:['LOW',null] };
+    const ADV_ON_DARK  = { behavioral:'#F07868', analytical:'#38D898', informational:'#F8C040' };
+    const ADV_ON_LIGHT = { behavioral:'#C01800', analytical:'#00663A', informational:'#C07800' };
 
     // Merge adjacent stage indices into contiguous segments ([start, end] pairs)
     function toSegments(idxs) {
@@ -751,57 +761,70 @@ if (quickAddForm) {
       out.push([s,p]); return out;
     }
 
-    // Build one chart item per agent
-    const items = agents.map(a => {
-      const covIdxs = (a.stages||[]).map(s=>STAGE_KEYS_S.indexOf(s)).filter(i=>i>=0).sort((a,b)=>a-b);
-      if (!covIdxs.length) return null;
-      const segs    = toSegments(covIdxs);
-      const isDark  = a.complexity==='black' || a.complexity==='dark-grey';
-      const textCol = isDark ? (ADV_ON_DARK[a.advantage]||'#E8E0D0') : (ADV_ON_LIGHT[a.advantage]||'#3A2810');
-      return { a, covIdxs, segs, minStage:covIdxs[0], maxStage:covIdxs[covIdxs.length-1], textCol };
-    }).filter(Boolean);
+    // Group agents by (autonomy, exact stage pattern) → one slot per unique combination
+    const slotMap = new Map();
+    agents.forEach(a => {
+      const covIdxs=(a.stages||[]).map(s=>STAGE_KEYS_S.indexOf(s)).filter(i=>i>=0).sort((a,b)=>a-b);
+      if (!covIdxs.length) return;
+      const key=`${a.autonomy}|${covIdxs.join(',')}`;
+      if (!slotMap.has(key)) slotMap.set(key,{covIdxs,autonomy:a.autonomy,members:[]});
+      slotMap.get(key).members.push(a);
+    });
 
-    // Group into autonomy bands (top = most autonomous)
+    // Enrich each slot with visual properties derived from its members
+    const slots = [...slotMap.values()].map(s => {
+      const cxC={}, advC={};
+      s.members.forEach(a=>{cxC[a.complexity]=(cxC[a.complexity]||0)+1; advC[a.advantage]=(advC[a.advantage]||0)+1;});
+      const topCx  = Object.entries(cxC).sort((a,b)=>b[1]-a[1])[0]?.[0];
+      const topAdv = Object.entries(advC).sort((a,b)=>b[1]-a[1])[0]?.[0];
+      const fill   = Object.keys(cxC).length===1 ? (CX_FILL[topCx]||'#A09878') : '#B0A080';
+      const isDark = fill===CX_FILL['black']||fill===CX_FILL['dark-grey'];
+      const stroke = ADV_TEXT[topAdv] || '#8A7060';
+      const textCol= isDark ? (ADV_ON_DARK[topAdv]||'#E8E0D0') : (ADV_ON_LIGHT[topAdv]||'#3A2810');
+      const segs   = toSegments(s.covIdxs);
+      return {...s, fill, stroke, textCol, segs, minStage:s.covIdxs[0], maxStage:s.covIdxs[s.covIdxs.length-1]};
+    });
+
+    // Group slots into autonomy bands (top = most autonomous)
     const bands = ['full','high','medium','low'].map(k => ({
       key:k, color:AU_COLORS[k], lbls:AU_LBLS[k],
-      items: items.filter(it=>it.a.autonomy===k).sort((a,b)=>a.minStage-b.minStage||a.maxStage-b.maxStage),
-    })).filter(b=>b.items.length>0);
+      slots: slots.filter(s=>s.autonomy===k).sort((a,b)=>a.minStage-b.minStage||a.maxStage-b.maxStage),
+    })).filter(b=>b.slots.length>0);
 
     // Greedy row-packing within each band
     bands.forEach(band => {
       const rows = [];
-      band.items.forEach(item => {
+      band.slots.forEach(slot => {
         let placed=false;
         for (const row of rows) {
-          if (!row.some(ex=>item.minStage<=ex.maxStage && item.maxStage>=ex.minStage)) { row.push(item); placed=true; break; }
+          if (!row.some(ex=>slot.minStage<=ex.maxStage&&slot.maxStage>=ex.minStage)) { row.push(slot); placed=true; break; }
         }
-        if (!placed) rows.push([item]);
+        if (!placed) rows.push([slot]);
       });
       band.rows = rows;
     });
 
     // Layout: left Y-axis label column + chart area
     const W=1000, LABEL_W=88, PR=10, TOP_PAD=50;
-    const BAR_H=18, ROW_H=BAR_H+7;
-    const BAND_PAD=9;
+    const BAR_H=20, ROW_H=BAR_H+10;
+    const BAND_PAD=12;
     const CHART_W=W-LABEL_W-PR, N=STAGE_KEYS_S.length;
-    const COL_W=CHART_W/N, SEG_GAP=7;
-    // x coordinates within the plot area
-    const colCx  = i => LABEL_W + (i+0.5)*COL_W;
-    const segL   = s => LABEL_W + s*COL_W + SEG_GAP/2;
-    const segR   = e => LABEL_W + (e+1)*COL_W - SEG_GAP/2;
+    const COL_W=CHART_W/N, SEG_GAP=8;
+    const colCx = i => LABEL_W+(i+0.5)*COL_W;
+    const segL   = s => LABEL_W+s*COL_W+SEG_GAP/2;
+    const segR   = e => LABEL_W+(e+1)*COL_W-SEG_GAP/2;
 
     bands.forEach(b => { b.h = BAND_PAD*2 + b.rows.length*ROW_H; });
     let totalH = TOP_PAD;
     bands.forEach(b => totalH += b.h);
     totalH += 10;
 
-    const svg = svgEl('svg', { viewBox:`0 0 ${W} ${totalH}`, width:'100%', style:'display:block;min-width:680px' });
+    const svg = svgEl('svg', {viewBox:`0 0 ${W} ${totalH}`, width:'100%', style:'display:block;min-width:680px'});
     svg.appendChild(svgEl('rect', {x:0,y:0,width:W,height:totalH,fill:'#FAF7F1'}));
 
-    // Stage column alternating tints (plot area only)
+    // Very subtle column divider lines only — no alternating tints (too noisy)
     STAGE_KEYS_S.forEach((_,i) => {
-      if (i%2===0) svg.appendChild(svgEl('rect', {x:LABEL_W+i*COL_W,y:TOP_PAD-4,width:COL_W,height:totalH-TOP_PAD+4-10,fill:'rgba(140,100,50,0.04)'}));
+      if (i>0) svg.appendChild(svgEl('line', {x1:LABEL_W+i*COL_W,y1:TOP_PAD-4,x2:LABEL_W+i*COL_W,y2:totalH-10,stroke:'rgba(140,100,50,0.10)','stroke-width':'1'}));
     });
 
     // Vertical Y-axis line
@@ -814,10 +837,7 @@ if (quickAddForm) {
       svg.appendChild(svgEl('text', {x:cx,y:18,'text-anchor':'middle','font-size':'9.5','font-weight':'700',fill:color,'font-family':'Inter,system-ui,sans-serif'}, ln1));
       if (ln2) svg.appendChild(svgEl('text', {x:cx,y:31,'text-anchor':'middle','font-size':'9','font-weight':'600',fill:color,'font-family':'Inter,system-ui,sans-serif'}, ln2));
     });
-    // Top axis separator
     svg.appendChild(svgEl('line', {x1:LABEL_W,y1:TOP_PAD-4,x2:W,y2:TOP_PAD-4,stroke:'rgba(140,100,50,0.28)','stroke-width':'1'}));
-
-    // "AUTONOMY" label in top-left corner
     svg.appendChild(svgEl('text', {x:LABEL_W/2,y:TOP_PAD/2+4,'text-anchor':'middle','font-size':'8','font-weight':'700',fill:'rgba(140,100,50,0.50)','font-family':'Inter,system-ui,sans-serif','letter-spacing':'0.07em'}, 'AUTONOMY'));
 
     const tooltip = document.getElementById('scatterTooltip');
@@ -826,102 +846,130 @@ if (quickAddForm) {
       tooltip.style.left=(e.clientX+14)+'px'; tooltip.style.top=(e.clientY-10)+'px';
     }
 
-    // Draw bands (top = Fully Autonomous, bottom = Low)
+    // Detail panel for grouped slots (N > 1)
+    window._closeScatterDetail = function() {
+      const p=document.getElementById('scatterDetailPanel'); if (p) p.style.display='none';
+    };
+    function showDetail(slot) {
+      const panel=document.getElementById('scatterDetailPanel');
+      const title=document.getElementById('scatterDetailTitle');
+      const content=document.getElementById('scatterDetailContent');
+      if (!panel) return;
+      const auLabel=slot.autonomy==='full'?'Fully Autonomous':scap(slot.autonomy);
+      const sNames=slot.covIdxs.map(i=>STAGE_LABELS_S[i].filter(s=>s).join(' ')).join(' · ');
+      title.textContent=`${auLabel} · ${sNames} · ${slot.members.length} agents`;
+      content.innerHTML=slot.members.map(a=>{
+        const col=ADV_TEXT[a.advantage]||'#5A3A10';
+        return `<a href="/agents/${a.id}" class="scatter-detail-badge" style="color:${col};border-color:${col}55;background:${col}15">${sesc(a.name)}</a>`;
+      }).join('');
+      panel.style.display=''; panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+    }
+
+    // Draw bands (top = most autonomous)
     let y = TOP_PAD;
     bands.forEach((band, bi) => {
       const bandY=y, bandH=band.h;
-
-      // Band background (alternating)
       if (bi%2===0) svg.appendChild(svgEl('rect', {x:0,y:bandY,width:W,height:bandH,fill:'rgba(140,100,50,0.028)'}));
-
-      // Band separator
       svg.appendChild(svgEl('line', {x1:0,y1:bandY,x2:W,y2:bandY,stroke:'rgba(140,100,50,0.22)','stroke-width':'1'}));
-
-      // Y-axis tick
       svg.appendChild(svgEl('line', {x1:LABEL_W-7,y1:bandY,x2:LABEL_W,y2:bandY,stroke:'rgba(140,100,50,0.45)','stroke-width':'1.5'}));
 
-      // Band label (centered in left column)
-      const midY=bandY+bandH/2;
+      // Band label + agent count in left column
+      const midBY=bandY+bandH/2;
       const [l1,l2]=band.lbls;
-      svg.appendChild(svgEl('text', {x:LABEL_W/2,y:midY+(l2?-5:3),'text-anchor':'middle','font-size':'9','font-weight':'800',fill:band.color,'font-family':'Inter,system-ui,sans-serif','letter-spacing':'0.05em'}, l1));
-      if (l2) svg.appendChild(svgEl('text', {x:LABEL_W/2,y:midY+7,'text-anchor':'middle','font-size':'9','font-weight':'800',fill:band.color,'font-family':'Inter,system-ui,sans-serif','letter-spacing':'0.05em'}, l2));
-      svg.appendChild(svgEl('text', {x:LABEL_W/2,y:midY+(l2?19:17),'text-anchor':'middle','font-size':'7','font-weight':'400',fill:band.color,'font-family':'Inter,system-ui,sans-serif',opacity:'0.60'}, `${band.items.length}`));
+      const nTotal=band.slots.reduce((n,s)=>n+s.members.length,0);
+      svg.appendChild(svgEl('text', {x:LABEL_W/2,y:midBY+(l2?-5:3),'text-anchor':'middle','font-size':'9','font-weight':'800',fill:band.color,'font-family':'Inter,system-ui,sans-serif','letter-spacing':'0.05em'}, l1));
+      if (l2) svg.appendChild(svgEl('text', {x:LABEL_W/2,y:midBY+7,'text-anchor':'middle','font-size':'9','font-weight':'800',fill:band.color,'font-family':'Inter,system-ui,sans-serif','letter-spacing':'0.05em'}, l2));
+      svg.appendChild(svgEl('text', {x:LABEL_W/2,y:midBY+(l2?20:18),'text-anchor':'middle','font-size':'7','font-weight':'400',fill:band.color,'font-family':'Inter,system-ui,sans-serif',opacity:'0.60'}, `${nTotal} agents`));
 
-      // Agent rows
+      // Rows of slots
       band.rows.forEach((row, ri) => {
         const rowY=bandY+BAND_PAD+ri*ROW_H;
         const barY=rowY+(ROW_H-BAR_H)/2;
         const midBarY=barY+BAR_H/2;
 
-        row.forEach(item => {
-          const { a, covIdxs, segs, minStage, maxStage, textCol } = item;
-          const fill   = CX_FILL[a.complexity]  || '#A09878';
-          const stroke = ADV_TEXT[a.advantage]  || '#8A7060';
-          const g = svgEl('g', {style:'cursor:pointer'});
+        row.forEach(slot => {
+          const {covIdxs,segs,fill,stroke,textCol,members,minStage,maxStage}=slot;
+          const n=members.length;
+          const g=svgEl('g', {style:'cursor:pointer'});
 
-          // Bridge lines between non-adjacent segments
+          // Very subtle bridge lines between non-adjacent segments
           for (let si=1; si<segs.length; si++) {
             g.appendChild(svgEl('line', {
-              x1:segR(segs[si-1][1]), y1:midBarY, x2:segL(segs[si][0]), y2:midBarY,
-              stroke, 'stroke-width':'1.5', opacity:'0.30', 'stroke-dasharray':'4,3',
+              x1:segR(segs[si-1][1]),y1:midBarY, x2:segL(segs[si][0]),y2:midBarY,
+              stroke:stroke,opacity:'0.18','stroke-width':'1','stroke-dasharray':'3,5',
             }));
           }
 
-          // Solid bars for each contiguous segment of stages
+          // Solid filled bars
           segs.forEach(([s,e]) => {
             g.appendChild(svgEl('rect', {
-              x:segL(s), y:barY, width:segR(e)-segL(s), height:BAR_H, rx:BAR_H/2,
-              fill, stroke, 'stroke-width':'1.5', opacity:'0.92',
+              x:segL(s),y:barY, width:segR(e)-segL(s),height:BAR_H, rx:BAR_H/2,
+              fill, stroke,'stroke-width':'1.5',opacity:'0.93',
             }));
           });
 
-          // Name label centered across full bar span, clipped to it
-          const x0=segL(minStage), x1=segR(maxStage), spanW=x1-x0;
+          // Label anchored to the widest segment (prevents floating labels over bridge gaps)
+          const widestSeg=segs.reduce((b,s)=>(segR(s[1])-segL(s[0]))>(segR(b[1])-segL(b[0]))?s:b, segs[0]);
+          const lx0=segL(widestSeg[0]), lx1=segR(widestSeg[1]), lw=lx1-lx0;
           const clipId=`sc${Math.random().toString(36).slice(2,8)}`;
           const defs=svgEl('defs'); const cp=svgEl('clipPath',{id:clipId});
-          cp.appendChild(svgEl('rect',{x:x0,y:barY,width:spanW,height:BAR_H}));
+          cp.appendChild(svgEl('rect',{x:lx0,y:barY,width:lw,height:BAR_H}));
           defs.appendChild(cp); svg.appendChild(defs);
 
-          const maxCh=Math.max(4,Math.floor(spanW/5.8));
-          const nm=a.name, label=nm.length>maxCh ? nm.slice(0,maxCh-1)+'…' : nm;
+          const maxCh=Math.max(3,Math.floor(lw/5.5));
+          let label;
+          if (n===1) {
+            const nm=members[0].name;
+            label=nm.length>maxCh ? nm.slice(0,maxCh-1)+'…' : nm;
+          } else {
+            const badge=` +${n-1}`;
+            const avail=maxCh-badge.length;
+            const fn=members[0].name;
+            label=(avail>2 ? (fn.length>avail ? fn.slice(0,avail-1)+'…' : fn) : '') + badge;
+          }
           g.appendChild(svgEl('text', {
-            x:(x0+x1)/2, y:midBarY+3.5, 'text-anchor':'middle',
-            'font-size':'9', 'font-weight':'600', fill:textCol,
-            'font-family':'Inter,system-ui,sans-serif', 'clip-path':`url(#${clipId})`,
+            x:(lx0+lx1)/2, y:midBarY+3.8, 'text-anchor':'middle',
+            'font-size':'9.5','font-weight':'600',fill:textCol,
+            'font-family':'Inter,system-ui,sans-serif','clip-path':`url(#${clipId})`,
           }, label));
 
-          // Hover
+          // Hover tooltip
           g.addEventListener('mouseenter', e => {
-            g.querySelectorAll('rect').forEach(r=>{ r.setAttribute('stroke-width','2.5'); r.setAttribute('opacity','1'); });
+            g.querySelectorAll('rect').forEach(r=>{r.setAttribute('stroke-width','2.5');r.setAttribute('opacity','1');});
             g.querySelectorAll('line').forEach(l=>l.setAttribute('opacity','0.65'));
             if (tooltip) {
-              const auLbl=a.autonomy==='full'?'Fully Autonomous':scap(a.autonomy)+' autonomy';
               const sNames=covIdxs.map(i=>STAGE_LABELS_S[i].filter(s=>s).join(' ')).join(' · ');
-              const ac=ADV_TEXT[a.advantage]||'#5A3A10';
-              tooltip.innerHTML=
-                `<div class="stt-name" style="color:${ac}">${sesc(a.name)}</div>`+
-                `<div class="stt-meta">${CX_LABELS[a.complexity]||''} · ${scap(a.advantage)} · ${auLbl}</div>`+
-                `<div class="stt-meta" style="margin-top:4px">${sNames}</div>`;
+              if (n===1) {
+                const a=members[0], ac=ADV_TEXT[a.advantage]||'#5A3A10';
+                const auLbl=a.autonomy==='full'?'Fully Autonomous':scap(a.autonomy)+' autonomy';
+                tooltip.innerHTML=`<div class="stt-name" style="color:${ac}">${sesc(a.name)}</div>`+
+                  `<div class="stt-meta">${CX_LABELS[a.complexity]||''} · ${scap(a.advantage)} · ${auLbl}</div>`+
+                  `<div class="stt-meta" style="margin-top:4px">${sNames}</div>`;
+              } else {
+                tooltip.innerHTML=`<div class="stt-name">×${n} agents</div>`+
+                  `<div class="stt-meta" style="margin-top:2px">${members.slice(0,4).map(a=>sesc(a.name)).join(', ')}${n>4?'…':''}</div>`+
+                  `<div class="stt-meta" style="margin-top:4px;color:var(--accent)">Click to see all ↓</div>`;
+              }
               tooltip.classList.add('visible'); posTooltip(e);
             }
           });
           g.addEventListener('mousemove', posTooltip);
           g.addEventListener('mouseleave', () => {
-            g.querySelectorAll('rect').forEach(r=>{ r.setAttribute('stroke-width','1.5'); r.setAttribute('opacity','0.92'); });
-            g.querySelectorAll('line').forEach(l=>l.setAttribute('opacity','0.30'));
+            g.querySelectorAll('rect').forEach(r=>{r.setAttribute('stroke-width','1.5');r.setAttribute('opacity','0.93');});
+            g.querySelectorAll('line').forEach(l=>l.setAttribute('opacity','0.18'));
             if (tooltip) tooltip.classList.remove('visible');
           });
-          g.addEventListener('click', () => { window.location.href=`/agents/${a.id}`; });
+          g.addEventListener('click', () => {
+            if (tooltip) tooltip.classList.remove('visible');
+            n===1 ? window.location.href=`/agents/${members[0].id}` : showDetail(slot);
+          });
           svg.appendChild(g);
         });
       });
-
       y += bandH;
     });
 
-    // Bottom axis line
     svg.appendChild(svgEl('line', {x1:LABEL_W,y1:totalH-10,x2:W,y2:totalH-10,stroke:'rgba(140,100,50,0.22)','stroke-width':'1'}));
-
     return svg;
   }
 

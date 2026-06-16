@@ -551,7 +551,6 @@ html, body {
 }
 .mf-btn:hover { color: var(--text-primary); background: var(--bg-surface); }
 .mf-btn.active { background: var(--bg-surface); color: var(--text-primary); box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
-.mf-btn-beh { }
 .mf-btn-beh.active { color: var(--beh) !important; }
 .mf-btn-ana.active { color: var(--ana) !important; }
 .mf-btn-inf.active { color: var(--inf) !important; }
@@ -1413,6 +1412,7 @@ html, body {
   margin-bottom: 8px;
   display: -webkit-box;
   -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -1533,8 +1533,8 @@ html, body {
   align-items: center;
   gap: 10px;
   padding: 9px 16px;
-  background: var(--bg-elevated);
-  border-bottom: 1px solid var(--border-subtle);
+  background: #F0E8D8;
+  border-bottom: 1px solid #DDD0BA;
 }
 .cx-lane-swatch {
   width: 12px;
@@ -1549,20 +1549,20 @@ html, body {
 .cx-lane-name {
   font-size: 12px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: #2E1A04;
 }
 .cx-lane-sub {
   font-size: 10.5px;
-  color: var(--text-muted);
+  color: #8A6840;
   margin-top: 1px;
 }
 .cx-lane-count {
   margin-left: auto;
   font-size: 11px;
   font-weight: 600;
-  color: var(--text-muted);
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
+  color: #7A5830;
+  background: rgba(140,100,50,0.10);
+  border: 1px solid rgba(140,100,50,0.22);
   border-radius: 10px;
   padding: 1px 8px;
 }
@@ -1571,89 +1571,97 @@ html, body {
   flex-wrap: wrap;
   gap: 10px;
   padding: 12px 16px;
+  background: #F5EFE4;
 }
 .cx-lane-empty {
   font-size: 12px;
-  color: var(--text-muted);
+  color: #9A7850;
   font-style: italic;
   padding: 2px 0;
 }
 
-/* ── Agent cards inside panel ────────────────────────────────────── */
+/* ── Agent cards inside panel — beige matrix palette ─────────────── */
 .stage-panel-card {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  padding: 12px 13px;
-  width: 260px;
+  background: #FAF7F1;
+  border: 1px solid #E0D0B8;
+  border-radius: 10px;
+  padding: 13px 14px;
+  width: 270px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  transition: border-color 0.15s;
+  gap: 7px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-shadow: 1px 2px 8px rgba(0,0,0,0.10);
 }
-.stage-panel-card:hover { border-color: var(--accent); }
+.stage-panel-card:hover {
+  border-color: var(--accent);
+  box-shadow: 1px 4px 14px rgba(0,0,0,0.16);
+}
 .spc-top {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 6px;
+  gap: 8px;
 }
 .spc-name {
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--accent);
   line-height: 1.3;
   text-decoration: none;
   transition: color 0.12s;
 }
-.spc-name:hover { color: var(--accent); }
+.spc-name:hover { color: var(--accent-dark); }
 .spc-adv-pill {
-  font-size: 9.5px;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 10px;
-  border: 1px solid;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 12px;
+  border: 1.5px solid;
   white-space: nowrap;
   flex-shrink: 0;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
   text-transform: capitalize;
+  background: transparent;
 }
 .spc-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 5px;
 }
 .spc-meta-pill {
-  font-size: 10px;
-  color: var(--text-muted);
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  padding: 1px 6px;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: #5A3A10;
+  background: rgba(140,100,50,0.10);
+  border: 1px solid rgba(140,100,50,0.22);
+  border-radius: 10px;
+  padding: 2px 9px;
 }
 .spc-desc {
   font-size: 12px;
-  color: var(--text-secondary);
-  line-height: 1.6;
+  color: #3A2810;
+  line-height: 1.65;
   margin: 0;
   display: -webkit-box;
   -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 .spc-features {
   font-size: 11.5px;
-  color: var(--text-muted);
-  padding-left: 15px;
+  color: #5A4530;
+  padding-left: 16px;
   margin: 0;
-  line-height: 1.65;
+  line-height: 1.7;
   flex-grow: 1;
 }
-.spc-features li + li { margin-top: 1px; }
+.spc-features li + li { margin-top: 2px; }
 .spc-actions {
   display: flex;
-  gap: 6px;
+  gap: 7px;
   margin-top: 2px;
 }
 .spc-btn-details {
@@ -1661,26 +1669,27 @@ html, body {
   text-align: center;
   background: var(--accent);
   color: #fff;
-  border-radius: 5px;
-  padding: 4px 8px;
-  font-size: 11px;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 11.5px;
   font-weight: 600;
   text-decoration: none;
   transition: background 0.12s;
 }
-.spc-btn-details:hover { background: var(--accent-hover); color: #fff; }
+.spc-btn-details:hover { background: var(--accent-dark); color: #fff; }
 .spc-btn-link {
   text-align: center;
-  background: var(--bg-surface);
-  color: var(--text-secondary);
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 4px 8px;
-  font-size: 11px;
+  background: transparent;
+  color: #7A5030;
+  border: 1px solid #C4A478;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 11.5px;
+  font-weight: 500;
   text-decoration: none;
-  transition: background 0.12s;
+  transition: background 0.12s, color 0.12s;
 }
-.spc-btn-link:hover { background: var(--bg-elevated); color: var(--text-primary); }
+.spc-btn-link:hover { background: rgba(196,132,90,0.12); color: #5A3010; }
 
 /* ═══════════════════════════════════════════════════════════════════════
    VIEW TOGGLE & AUTONOMY SCATTER PLOT
@@ -1845,59 +1854,74 @@ html, body {
 .scatter-detail-badge:hover { filter: brightness(1.25); }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   STAGE × ADVANTAGE MATRIX — complexity mini-box + row label cells
+   STAGE × ADVANTAGE MATRIX — advantage-coloured lines + complexity labels
 ═══════════════════════════════════════════════════════════════════════ */
 
-/* Small complexity colour swatch inside badge label */
-.cx-mini {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 2px;
-  margin-right: 4px;
-  flex-shrink: 0;
-  vertical-align: middle;
-  position: relative;
-  top: -1px;
-}
-.cx-mini-black      { background: #1E1E1E; box-shadow: inset 0 0 0 1px #555; }
-.cx-mini-dark-grey  { background: #505050; box-shadow: inset 0 0 0 1px #686868; }
-.cx-mini-light-grey { background: #B0B0B0; box-shadow: inset 0 0 0 1px #888; }
-.cx-mini-white      { background: #E8E8E8; box-shadow: inset 0 0 0 1px #C0C0C0; }
-
-/* Badge variant that holds a complexity mini-box — switch to flex */
-.agent-badge.badge-has-cx {
-  display: inline-flex;
-  align-items: center;
-}
-
-/* Complexity legend items in the new matrix legend row */
-.legend-cx-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 4px;
+/* Legend: text-coloured complexity samples */
+.legend-cx-text {
   font-size: 10px;
-  color: #5A3A10;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(140,100,50,0.07);
 }
-.legend-cx-item::before {
-  content: '';
-  display: inline-block;
-  width: 8px; height: 8px;
-  border-radius: 2px;
-}
-.legend-cx-black      { background: rgba(30,30,30,0.10); }
-.legend-cx-black::before      { background: #1E1E1E; box-shadow: inset 0 0 0 1px #555; }
-.legend-cx-dark-grey  { background: rgba(80,80,80,0.10); }
-.legend-cx-dark-grey::before  { background: #505050; }
-.legend-cx-light-grey { background: rgba(160,160,160,0.14); }
-.legend-cx-light-grey::before { background: #B0B0B0; box-shadow: inset 0 0 0 1px #888; }
-.legend-cx-white      { background: rgba(210,205,195,0.18); }
-.legend-cx-white::before      { background: #E8E8E8; box-shadow: inset 0 0 0 1px #C0C0C0; }
+.legend-cx-text-black      { color: #1C1C1C; }
+.legend-cx-text-dark-grey  { color: #484848; }
+.legend-cx-text-light-grey { color: #7A7A7A; }
+.legend-cx-text-white      { color: #9A8870; }
 
-/* Advantage row label cells — coloured like complexity cells but tinted by advantage */
+/* ── Per-advantage row: cell borders carry the advantage colour ────── */
+/* Selector beats .matrix-table-3d .matrix-cell (two-class + row class) */
+.adv-matrix-table.matrix-table-3d .adv-row-behavioral .matrix-cell,
+.adv-matrix-table.matrix-table-3d .adv-row-behavioral .matrix-cell:has(.agent-badge) {
+  background:    #F5DDD8 !important;
+  border-top:    4px solid #F0BEB0 !important;
+  border-left:   3px solid #F0BEB0 !important;
+  border-bottom: 4px solid #903828 !important;
+  border-right:  3px solid #903828 !important;
+}
+.adv-matrix-table.matrix-table-3d .adv-row-analytical .matrix-cell,
+.adv-matrix-table.matrix-table-3d .adv-row-analytical .matrix-cell:has(.agent-badge) {
+  background:    #E6F4EE !important;
+  border-top:    4px solid #A0D8C4 !important;
+  border-left:   3px solid #A0D8C4 !important;
+  border-bottom: 4px solid #187050 !important;
+  border-right:  3px solid #187050 !important;
+}
+.adv-matrix-table.matrix-table-3d .adv-row-informational .matrix-cell,
+.adv-matrix-table.matrix-table-3d .adv-row-informational .matrix-cell:has(.agent-badge) {
+  background:    #F8EFD8 !important;
+  border-top:    4px solid #EED494 !important;
+  border-left:   3px solid #EED494 !important;
+  border-bottom: 4px solid #987010 !important;
+  border-right:  3px solid #987010 !important;
+}
+
+/* ── Badge text colour = complexity level ────────────────────────────── */
+.adv-matrix-table .badge-container[data-complexity="black"]      .agent-badge { color: #181818 !important; }
+.adv-matrix-table .badge-container[data-complexity="dark-grey"]  .agent-badge { color: #484848 !important; }
+.adv-matrix-table .badge-container[data-complexity="light-grey"] .agent-badge { color: #787878 !important; }
+.adv-matrix-table .badge-container[data-complexity="white"]      .agent-badge { color: #9A8870 !important; }
+
+/* ── Badge fill/border = product type, in neutral warm-brown palette ─── */
+.adv-matrix-table .agent-badge {
+  background: rgba(90,58,20,0.12) !important;
+  border: none !important;
+}
+.adv-matrix-table .agent-badge[class*="-commercial"] {
+  background: rgba(90,58,20,0.18) !important;
+  border: none !important;
+}
+.adv-matrix-table .agent-badge[class*="-in-house"] {
+  background: transparent !important;
+  border: 1.5px solid rgba(90,58,20,0.52) !important;
+}
+.adv-matrix-table .agent-badge[class*="-academic"] {
+  background: transparent !important;
+  border: 1.5px dashed rgba(90,58,20,0.52) !important;
+}
+
+/* Advantage row label cells */
 .lc-adv {
   vertical-align: middle;
 }
