@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+{% block title %}Agent Guide — AI Agent Classifier{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-3">
+  <div class="col-lg-9">
+
+    <div class="mb-4">
+      <h4 class="fw-bold mb-1 page-title">Agent Finder</h4>
+      <p class="page-citation mb-0">Answer a few questions to discover the most relevant AI agents for your needs.</p>
+    </div>
+
+    <!-- ── Question steps ─────────────────────────────────────────────── -->
+    <div id="guide-steps">
+
+      <!-- Step 1: Stage(s) -->
+      <div class="guide-step" id="step-1">
+        <div class="mb-3">
+          <span class="guide-step-num">01 / 04</span>
+          <h6 class="guide-step-title mt-1">Which investment process stage are you focused on?</h6>
+          <p class="guide-step-hint">Select one or more — we'll match agents that cover your stage(s).</p>
+        </div>
+        <div class="guide-options-grid">
+          {% for key, label in stages %}
+          <label class="guide-option guide-stage-{{ key }}">
+            <input type="checkbox" value="{{ key }}" class="d-none guide-input-stages" />
+            <span class="guide-option-label">{{ label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <button class="btn btn-primary btn-sm mt-3" id="next-1" disabled onclick="nextStep(1)">
+          Continue →
+        </button>
+      </div>
+
+      <!-- Step 2: Advantage -->
+      <div class="guide-step d-none" id="step-2">
+        <div class="mb-3">
+          <span class="guide-step-num">02 / 04</span>
+          <h6 class="guide-step-title mt-1">What type of competitive edge are you looking for?</h6>
+        </div>
+        <div class="guide-options-grid">
+          <label class="guide-option guide-adv-behavioral">
+            <input type="radio" name="advantage" value="behavioral" class="d-none guide-input-advantage" />
+            <span class="guide-option-label">Behavioral</span>
+            <span class="guide-option-sub">Remove human cognitive bias</span>
+          </label>
+          <label class="guide-option guide-adv-analytical">
+            <input type="radio" name="advantage" value="analytical" class="d-none guide-input-advantage" />
+            <span class="guide-option-label">Analytical</span>
+            <span class="guide-option-sub">Superior processing &amp; modelling</span>
+          </label>
+          <label class="guide-option guide-adv-informational">
+            <input type="radio" name="advantage" value="informational" class="d-none guide-input-advantage" />
+            <span class="guide-option-label">Informational</span>
+            <span class="guide-option-sub">Better data access &amp; aggregation</span>
+          </label>
+          <label class="guide-option">
+            <input type="radio" name="advantage" value="any" class="d-none guide-input-advantage" />
+            <span class="guide-option-label">No preference</span>
+            <span class="guide-option-sub">Show all types</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Step 3: Autonomy -->
+      <div class="guide-step d-none" id="step-3">
+        <div class="mb-3">
+          <span class="guide-step-num">03 / 04</span>
+          <h6 class="guide-step-title mt-1">How much autonomy should the AI have?</h6>
+        </div>
+        <div class="guide-options-grid">
+          <label class="guide-option">
+            <input type="radio" name="autonomy" value="low" class="d-none guide-input-autonomy" />
+            <span class="guide-option-label">Low</span>
+            <span class="guide-option-sub">AI assists, human decides</span>
+          </label>
+          <label class="guide-option">
+            <input type="radio" name="autonomy" value="medium" class="d-none guide-input-autonomy" />
+            <span class="guide-option-label">Medium</span>
+            <span class="guide-option-sub">AI recommends, human approves</span>
+          </label>
+          <label class="guide-option">
+            <input type="radio" name="autonomy" value="high" class="d-none guide-input-autonomy" />
+            <span class="guide-option-label">High</span>
+            <span class="guide-option-sub">AI acts, human monitors</span>
+          </label>
+          <label class="guide-option">
+            <input type="radio" name="autonomy" value="full" class="d-none guide-input-autonomy" />
+            <span class="guide-option-label">Fully Autonomous</span>
+            <span class="guide-option-sub">No human veto — live capital</span>
+          </label>
+          <label class="guide-option">
+            <input type="radio" name="autonomy" value="any" class="d-none guide-input-autonomy" />
+            <span class="guide-option-label">No preference</span>
+            <span class="guide-option-sub">Show all levels</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Step 4: Complexity -->
+      <div class="guide-step d-none" id="step-4">
+        <div class="mb-3">
+          <span class="guide-step-num">04 / 04</span>
+          <h6 class="guide-step-title mt-1">What complexity tier are you targeting?</h6>
+          <p class="guide-step-hint">Based on the Swan Theory framework.</p>
+        </div>
+        <div class="guide-options-grid">
+          <label class="guide-option guide-cx-black">
+            <input type="radio" name="complexity" value="black" class="d-none guide-input-complexity" />
+            <span class="guide-option-label">Black Swan</span>
+            <span class="guide-option-sub">Rare, tail-risk, hard to model</span>
+          </label>
+          <label class="guide-option guide-cx-dark-grey">
+            <input type="radio" name="complexity" value="dark-grey" class="d-none guide-input-complexity" />
+            <span class="guide-option-label">Dark Grey Swan</span>
+            <span class="guide-option-sub">High uncertainty, ML-driven</span>
+          </label>
+          <label class="guide-option guide-cx-light-grey">
+            <input type="radio" name="complexity" value="light-grey" class="d-none guide-input-complexity" />
+            <span class="guide-option-label">Light Grey Swan</span>
+            <span class="guide-option-sub">Mostly known, minor uncertainty</span>
+          </label>
+          <label class="guide-option guide-cx-white">
+            <input type="radio" name="complexity" value="white" class="d-none guide-input-complexity" />
+            <span class="guide-option-label">White Swan</span>
+            <span class="guide-option-sub">Known, predictable, rule-based</span>
+          </label>
+          <label class="guide-option">
+            <input type="radio" name="complexity" value="any" class="d-none guide-input-complexity" />
+            <span class="guide-option-label">No preference</span>
+            <span class="guide-option-sub">Show all tiers</span>
+          </label>
+        </div>
+      </div>
+
+    </div><!-- /#guide-steps -->
+
+    <!-- ── Results ────────────────────────────────────────────────────── -->
+    <div id="guide-results" class="d-none">
+
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+          <h6 class="fw-bold mb-0" style="color:var(--accent)">
+            Recommended Agents
+            <span id="results-count" class="text-muted fw-normal ms-1" style="font-size:12px"></span>
+          </h6>
+        </div>
+        <button class="btn btn-outline-secondary btn-sm" onclick="resetGuide()">← Start over</button>
+      </div>
+
+      <div id="guide-summary" class="guide-summary-bar mb-3"></div>
+
+      <div id="results-grid" class="row g-3"></div>
+
+      <div id="no-results" class="d-none text-center py-5">
+        <p class="text-muted mb-3" style="font-size:14px">No agents match your exact criteria.</p>
+        <button class="btn btn-outline-secondary btn-sm" onclick="resetGuide()">Try broader criteria</button>
+      </div>
+
+    </div><!-- /#guide-results -->
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const ALL_AGENTS = {{ agents_json | safe }};
+
+const STAGE_LABELS = {
+  'idea-gen':    'Idea Generation',
+  'idea-assess': 'Idea Assessment',
+  'decision':    'Decision Point',
+  'execution':   'Execution',
+  'monitoring':  'Monitoring',
+  'compliance':  'Compliance',
+  'stakeholder': 'Stakeholder Mgmt',
+};
+const CX_LABELS = {
+  'black':      'Black Swan',
+  'dark-grey':  'Dark Grey Swan',
+  'light-grey': 'Light Grey Swan',
+  'white':      'White Swan',
+};
+
+let selections = { stages: [], advantage: null, autonomy: null, complexity: null };
+
+// ── Step 1: stage checkboxes ──────────────────────────────────────────
+document.querySelectorAll('.guide-input-stages').forEach(cb => {
+  cb.addEventListener('change', () => {
+    selections.stages = Array.from(
+      document.querySelectorAll('.guide-input-stages:checked')
+    ).map(c => c.value);
+    document.getElementById('next-1').disabled = selections.stages.length === 0;
+    cb.closest('.guide-option').classList.toggle('guide-option-selected', cb.checked);
+  });
+});
+
+// ── Steps 2–4: radio auto-advance ────────────────────────────────────
+[
+  { name: 'advantage',  cls: 'guide-input-advantage',  step: 2 },
+  { name: 'autonomy',   cls: 'guide-input-autonomy',   step: 3 },
+  { name: 'complexity', cls: 'guide-input-complexity', step: 4 },
+].forEach(({ name, cls, step }) => {
+  document.querySelectorAll(`.${cls}`).forEach(radio => {
+    radio.addEventListener('change', () => {
+      selections[name] = radio.value;
+      document.querySelectorAll(`.${cls}`).forEach(r =>
+        r.closest('.guide-option').classList.toggle('guide-option-selected', r === radio)
+      );
+      if (step < 4) {
+        setTimeout(() => nextStep(step), 220);
+      } else {
+        setTimeout(showResults, 220);
+      }
+    });
+  });
+});
+
+function nextStep(from) {
+  const next = document.getElementById(`step-${from + 1}`);
+  if (!next) return;
+  next.classList.remove('d-none');
+  next.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function showResults() {
+  const filtered = ALL_AGENTS.filter(a => {
+    const stageOk = selections.stages.length === 0 ||
+                    selections.stages.some(s => a.stages.includes(s));
+    const advOk   = !selections.advantage  || selections.advantage  === 'any' || a.advantage  === selections.advantage;
+    const autoOk  = !selections.autonomy   || selections.autonomy   === 'any' || a.autonomy   === selections.autonomy;
+    const cxOk    = !selections.complexity || selections.complexity === 'any' || a.complexity === selections.complexity;
+    return stageOk && advOk && autoOk && cxOk;
+  });
+
+  // Sort: more matching stages first
+  filtered.sort((a, b) => {
+    const aS = a.stages.filter(s => selections.stages.includes(s)).length;
+    const bS = b.stages.filter(s => selections.stages.includes(s)).length;
+    return bS - aS;
+  });
+
+  document.getElementById('guide-steps').classList.add('d-none');
+  const resultsEl = document.getElementById('guide-results');
+  resultsEl.classList.remove('d-none');
+  resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  document.getElementById('results-count').textContent =
+    `— ${filtered.length} agent${filtered.length !== 1 ? 's' : ''} found`;
+
+  // Selection summary pills
+  const pills = [];
+  selections.stages.forEach(s =>
+    pills.push(`<span class="guide-summary-pill">${STAGE_LABELS[s] || s}</span>`)
+  );
+  if (selections.advantage && selections.advantage !== 'any')
+    pills.push(`<span class="guide-summary-pill pill-adv-${selections.advantage}">${cap(selections.advantage)}</span>`);
+  if (selections.autonomy && selections.autonomy !== 'any')
+    pills.push(`<span class="guide-summary-pill">${autLabel(selections.autonomy)}</span>`);
+  if (selections.complexity && selections.complexity !== 'any')
+    pills.push(`<span class="guide-summary-pill">${CX_LABELS[selections.complexity] || selections.complexity}</span>`);
+  document.getElementById('guide-summary').innerHTML = pills.join('');
+
+  const grid = document.getElementById('results-grid');
+  grid.innerHTML = '';
+
+  if (filtered.length === 0) {
+    document.getElementById('no-results').classList.remove('d-none');
+    return;
+  }
+  document.getElementById('no-results').classList.add('d-none');
+
+  filtered.forEach(a => {
+    const overlap = a.stages.filter(s => selections.stages.includes(s));
+    const col = document.createElement('div');
+    col.className = 'col-md-6 col-xl-4';
+
+    const advPill = a.advantage
+      ? `<span class="adv-pill adv-pill-${a.advantage}">${cap(a.advantage)}</span>`
+      : '';
+
+    const metaPills = [
+      a.agent_type  ? capType(a.agent_type)            : null,
+      a.complexity  ? CX_LABELS[a.complexity] || a.complexity : null,
+      a.autonomy    ? autLabel(a.autonomy)               : null,
+    ].filter(Boolean)
+     .map(t => `<span class="guide-meta-pill">${esc(t)}</span>`)
+     .join('');
+
+    const stageRow = overlap.length
+      ? `<div class="guide-stage-match">
+           <span class="guide-stage-match-label">Covers:</span>
+           ${overlap.map(s => `<span class="guide-stage-chip">${STAGE_LABELS[s] || s}</span>`).join('')}
+         </div>`
+      : '';
+
+    const feats = (a.features || []).filter(f => f && f.trim()).slice(0, 3);
+    const featList = feats.length
+      ? `<ul class="guide-features-list">${feats.map(f => `<li>${esc(f)}</li>`).join('')}</ul>`
+      : '';
+
+    col.innerHTML = `
+      <div class="card guide-result-card h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+            <a href="/agents/${a.id}" class="guide-agent-name text-decoration-none">${esc(a.name)}</a>
+            ${advPill}
+          </div>
+          <div class="d-flex gap-1 flex-wrap mb-2">${metaPills}</div>
+          ${a.description ? `<p class="guide-agent-desc">${esc(a.description)}</p>` : ''}
+          ${stageRow}
+          ${featList}
+          <a href="/agents/${a.id}" class="btn btn-outline-primary btn-sm w-100 mt-auto">View details →</a>
+        </div>
+      </div>`;
+    grid.appendChild(col);
+  });
+}
+
+function resetGuide() {
+  selections = { stages: [], advantage: null, autonomy: null, complexity: null };
+  document.getElementById('guide-steps').classList.remove('d-none');
+  document.getElementById('guide-results').classList.add('d-none');
+  ['step-2', 'step-3', 'step-4'].forEach(id =>
+    document.getElementById(id).classList.add('d-none')
+  );
+  document.querySelectorAll('.guide-option-selected').forEach(el =>
+    el.classList.remove('guide-option-selected')
+  );
+  document.querySelectorAll(
+    '.guide-input-stages:checked, .guide-input-advantage:checked, .guide-input-autonomy:checked, .guide-input-complexity:checked'
+  ).forEach(el => { el.checked = false; });
+  document.getElementById('next-1').disabled = true;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function cap(s)     { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+function capType(s) { return s ? s.split('-').map(cap).join('-') : ''; }
+function autLabel(s){ return s === 'full' ? 'Fully Autonomous' : cap(s) + ' autonomy'; }
+function esc(s)     {
+  return s ? String(s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;') : '';
+}
+</script>
+{% endblock %}

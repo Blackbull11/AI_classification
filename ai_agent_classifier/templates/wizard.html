@@ -1,0 +1,677 @@
+{% extends "base.html" %}
+{% block title %}
+  {% if mode == 'edit' %}Edit Agent{% elif mode == 'classify' %}Classify Agent{% else %}Add Agent{% endif %}
+  — AI Agent Classifier
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-3">
+  <div class="col-lg-10">
+
+    <!-- Progress bar -->
+    <div class="mb-2 d-flex align-items-center justify-content-between">
+      <span class="text-muted small">Step {{ step }} of 4</span>
+      <span class="text-muted small">
+        {% if mode == 'edit' %}Editing: {{ agent.name }}
+        {% elif mode == 'classify' %}Classifying: {{ agent.name }}
+        {% else %}New Agent{% endif %}
+      </span>
+    </div>
+    <div class="progress mb-3" style="height:6px">
+      <div class="progress-bar" style="width:{{ (step / 4 * 100)|int }}%;background:var(--accent)"></div>
+    </div>
+
+    {% if mode == 'classify' %}
+      <p class="text-muted fst-italic small mb-3">Classifying: <strong>{{ agent.name }}</strong></p>
+    {% endif %}
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-4">
+
+        <!-- ════════════════════════════════════════════════════════ STEP 1 -->
+        {% if step == 1 %}
+          <h5 class="fw-bold mb-4">Step 1: Basic Information</h5>
+
+          {% if mode == 'add' %}
+            {% set form_action = url_for('add_step', n=1) %}
+          {% elif mode == 'edit' %}
+            {% set form_action = url_for('edit_step', agent_id=agent.id, n=1) %}
+          {% else %}
+            {% set form_action = url_for('classify_step', agent_id=agent.id, n=1) %}
+          {% endif %}
+
+          <form method="POST" action="{{ form_action }}" novalidate id="wizardForm">
+            <div class="mb-3">
+              <label class="form-label fw-semibold">
+                Agent name <span class="text-danger">*</span>
+              </label>
+              <input type="text" name="name" class="form-control" required
+                     value="{{ draft.get('name', '') }}"
+                     placeholder="e.g. BlackRock Aladdin Copilot" />
+              <div class="invalid-feedback">Agent name is required.</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Primary URL / source</label>
+              <input type="url" name="url" class="form-control"
+                     value="{{ draft.get('url', '') }}"
+                     placeholder="https://..." />
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label fw-semibold">Description</label>
+              <textarea name="description" class="form-control" rows="4"
+                        placeholder="What does this agent do?">{{ draft.get('description', '') }}</textarea>
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label fw-semibold">Agent type</label>
+              <div class="d-flex flex-column gap-2 mt-1">
+                {% for val, label, desc in [
+                  ('commercial', 'Commercial', 'A product available on the market (vendor / SaaS)'),
+                  ('in-house',   'In-house',   'Built internally by a firm, not sold externally'),
+                  ('academic',   'Academic',   'A research prototype — published but not deployed at scale'),
+                ] %}
+                  <div class="form-check p-0">
+                    <label class="d-flex align-items-start gap-3 p-3 rounded stage-option"
+                      style="cursor:pointer;{% if draft.get('agent_type') == val %}border-color:var(--accent)!important;background:var(--accent-muted){% endif %}">
+                      <input class="form-check-input mt-1" type="radio" name="agent_type"
+                             value="{{ val }}"
+                             {% if draft.get('agent_type') == val %}checked{% endif %} />
+                      <div>
+                        <strong>{{ label }}</strong>
+                        <div class="text-muted small">{{ desc }}</div>
+                      </div>
+                    </label>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-end">
+              <button type="submit" class="btn btn-primary">Next →</button>
+            </div>
+          </form>
+
+        <!-- ════════════════════════════════════════════════════════ STEP 2 -->
+        {% elif step == 2 %}
+          <h5 class="fw-bold mb-1">Step 2: Investment Process Coverage</h5>
+          <p class="text-muted fst-italic small mb-4">
+            Select all that apply — an agent can span multiple stages
+          </p>
+
+          {% if mode == 'add' %}
+            {% set form_action = url_for('add_step', n=2) %}
+          {% elif mode == 'edit' %}
+            {% set form_action = url_for('edit_step', agent_id=agent.id, n=2) %}
+          {% else %}
+            {% set form_action = url_for('classify_step', agent_id=agent.id, n=2) %}
+          {% endif %}
+
+          <form method="POST" action="{{ form_action }}" novalidate id="wizardForm">
+            <div class="d-flex flex-column gap-2 mb-4" id="stagesGroup">
+              {% for val, label, desc in [
+                ('idea-gen',    'Idea Generation',   'Screening, signal generation, opportunity sourcing'),
+                ('idea-assess', 'Idea Assessment',   'Research, analysis, valuation, due diligence'),
+                ('decision',    'Decision Point',    'Formal investment decision support or augmentation'),
+                ('execution',   'Execution',         'Order management, algorithmic trading, trade routing'),
+                ('monitoring',  'Monitoring',        'Portfolio / risk monitoring, performance attribution'),
+                ('compliance',  'Compliance',        'Regulatory reporting, pre/post-trade compliance, audit'),
+                ('stakeholder', 'Stakeholder Mgmt',  'Client reporting, communication, advisory'),
+              ] %}
+                <label class="d-flex align-items-start gap-3 p-3 rounded stage-option"
+                  style="cursor:pointer;{% if val in draft.get('stages', []) %}border-color:var(--accent)!important;background:var(--accent-muted){% endif %}">
+                  <input class="form-check-input mt-1" type="checkbox" name="stages"
+                         value="{{ val }}"
+                         {% if val in draft.get('stages', []) %}checked{% endif %} />
+                  <div>
+                    <strong>{{ label }}</strong>
+                    <div class="text-muted small">{{ desc }}</div>
+                  </div>
+                </label>
+              {% endfor %}
+            </div>
+            <div id="stagesError" class="text-danger small mb-2" style="display:none">
+              Please select at least one stage.
+            </div>
+
+            <div class="d-flex justify-content-between">
+              {% if mode == 'add' %}
+                <a href="{{ url_for('add_agent') }}" class="btn btn-outline-secondary">← Back</a>
+              {% elif mode == 'edit' %}
+                <a href="{{ url_for('edit_agent', agent_id=agent.id) }}" class="btn btn-outline-secondary">← Back</a>
+              {% else %}
+                <a href="{{ url_for('classify_agent', agent_id=agent.id) }}" class="btn btn-outline-secondary">← Back</a>
+              {% endif %}
+              <button type="submit" class="btn btn-primary">Next →</button>
+            </div>
+          </form>
+
+        <!-- ════════════════════════════════════════════════════════ STEP 3 -->
+        {% elif step == 3 %}
+          <h5 class="fw-bold mb-4">Step 3: Classification</h5>
+
+          {% if mode == 'add' %}
+            {% set form_action = url_for('add_step', n=3) %}
+          {% elif mode == 'edit' %}
+            {% set form_action = url_for('edit_step', agent_id=agent.id, n=3) %}
+          {% else %}
+            {% set form_action = url_for('classify_step', agent_id=agent.id, n=3) %}
+          {% endif %}
+
+          <form method="POST" action="{{ form_action }}" novalidate id="wizardForm">
+
+            <!-- Section A: Comparative Advantage -->
+            <div class="mb-4">
+              <h6 class="fw-bold mb-3">A. What type of comparative advantage does this agent create?</h6>
+              <div class="d-flex flex-column gap-2">
+                {% for val, label, desc in [
+                  ('informational', 'Informational',
+                   'Unique or faster access to data — news, filings, NLP signals, alternative data. Advantage erodes quickly once information is widely disseminated.'),
+                  ('analytical', 'Analytical',
+                   'Superior synthesis, factor models, ML pattern recognition, quantitative reasoning. More durable than informational; erodes as AI capabilities commoditise.'),
+                  ('behavioral', 'Behavioral',
+                   'Debiasing the decision-maker, cognitive nudges, bias mitigation. Most durable — knowing about a bias does not mean overcoming it.'),
+                ] %}
+                  {% set adv_colors = {
+                    'informational': '#EF9F27',
+                    'analytical':    '#1D9E75',
+                    'behavioral':    '#D85A30'
+                  } %}
+                  <label class="d-flex align-items-start gap-3 p-3 rounded stage-option"
+                    style="cursor:pointer;{% if draft.get('advantage') == val %}border-color:var(--accent)!important;background:var(--accent-muted){% endif %}">
+                    <input class="form-check-input mt-1" type="radio" name="advantage"
+                           value="{{ val }}"
+                           {% if draft.get('advantage') == val %}checked{% endif %} />
+                    <div>
+                      <strong style="color:{{ adv_colors[val] }}">{{ label }}</strong>
+                      <div class="text-muted small mt-1">{{ desc }}</div>
+                    </div>
+                  </label>
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- Section B: Complexity — decision tree -->
+            <div class="mb-4">
+              <h6 class="fw-bold mb-3">B. What complexity regime does this agent operate in?</h6>
+
+              <!-- Decision tree -->
+              <div class="card mb-3 p-3" id="decisionTree">
+                <!-- Q1 -->
+                <div id="dtQ1">
+                  <p class="mb-2 fw-semibold small">
+                    Q1: Is the probability distribution of outcomes well-defined and stable?
+                    <span class="text-muted fw-normal">(Abundant representative historical data; clear objective function)</span>
+                  </p>
+                  <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm dt-btn" style="border:1px solid var(--ana);color:var(--ana);background:transparent" data-answer="yes" data-q="1">
+                      Yes → White Swan
+                    </button>
+                    <button type="button" class="btn btn-sm dt-btn" style="border:1px solid var(--border);color:var(--text-secondary);background:transparent" data-answer="no" data-q="1">
+                      No
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Q2 -->
+                <div id="dtQ2" style="display:none" class="mt-3">
+                  <p class="mb-2 fw-semibold small">
+                    Q2: Is data abundant, but the search space large, noisy, or computationally intractable?
+                    <span class="text-muted fw-normal">(More data helps in principle; heuristics needed to approximate the distribution)</span>
+                  </p>
+                  <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm dt-btn" style="border:1px solid var(--ana);color:var(--ana);background:transparent" data-answer="yes" data-q="2">
+                      Yes → Light Grey Swan
+                    </button>
+                    <button type="button" class="btn btn-sm dt-btn" style="border:1px solid var(--border);color:var(--text-secondary);background:transparent" data-answer="no" data-q="2">
+                      No
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Q3 -->
+                <div id="dtQ3" style="display:none" class="mt-3">
+                  <p class="mb-2 fw-semibold small">
+                    Q3: Is the primary challenge identifying the correct causal factors rather than optimising their weights?
+                    <span class="text-muted fw-normal">(Scarce or heterogeneous information; logic matters more than computation)</span>
+                  </p>
+                  <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm dt-btn" style="border:1px solid var(--ana);color:var(--ana);background:transparent" data-answer="yes" data-q="3">
+                      Yes → Dark Grey Swan
+                    </button>
+                    <button type="button" class="btn btn-sm dt-btn" style="border:1px solid var(--border);color:var(--text-secondary);background:transparent" data-answer="no" data-q="3">
+                      No → Black Swan
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Result card -->
+                <div id="dtResult" style="display:none" class="mt-3 p-3 rounded border border-primary bg-primary bg-opacity-10">
+                  <strong id="dtResultLabel"></strong>
+                  <span class="text-muted small ms-2" id="dtResultDef"></span>
+                </div>
+              </div>
+
+              <!-- Radio overrides -->
+              <div class="d-flex flex-column gap-2">
+                {% set cx_descs = {
+                  'white':      ('White Swan',      'Known knowns — statistical / probabilistic models'),
+                  'light-grey': ('Light Grey Swan', 'Known unknowns — noise reduction, optimisation heuristics'),
+                  'dark-grey':  ('Dark Grey Swan',  'Scarce information — causation-based, scenario analysis'),
+                  'black':      ('Black Swan',      'Unknown unknowns — robustness over optimality, no model'),
+                } %}
+                {% for val in ['white', 'light-grey', 'dark-grey', 'black'] %}
+                  {% set label_cx, desc_cx = cx_descs[val] %}
+                  <label class="d-flex align-items-start gap-3 p-3 rounded cx-option"
+                    style="cursor:pointer;{% if draft.get('complexity') == val %}border-color:var(--accent)!important;background:var(--accent-muted){% endif %}">
+                    <input class="form-check-input mt-1 cx-radio" type="radio" name="complexity"
+                           value="{{ val }}" id="cx_{{ val }}"
+                           {% if draft.get('complexity') == val %}checked{% endif %} />
+                    <div>
+                      <strong>{{ label_cx }}</strong>
+                      <div class="text-muted small">{{ desc_cx }}</div>
+                    </div>
+                  </label>
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- Section C: Autonomy -->
+            <div class="mb-4">
+              <h6 class="fw-bold mb-3">C. What level of autonomy does this agent exercise?</h6>
+              <div class="d-flex flex-column gap-2">
+                {% for val, label, desc in [
+                  ('low',    'Low',              'Decision support only — provides information or nudges; human acts'),
+                  ('medium', 'Medium',           'Recommends with human sign-off — proposes actions awaiting approval'),
+                  ('high',   'High',             'Executes autonomously — acts independently within set parameters'),
+                  ('full',   'Fully Autonomous', 'No human oversight on individual decisions — live capital deployment with no human veto'),
+                ] %}
+                  <label class="d-flex align-items-start gap-3 p-3 rounded stage-option"
+                    style="cursor:pointer;{% if draft.get('autonomy') == val %}border-color:var(--accent)!important;background:var(--accent-muted){% endif %}">
+                    <input class="form-check-input mt-1" type="radio" name="autonomy"
+                           value="{{ val }}"
+                           {% if draft.get('autonomy') == val %}checked{% endif %} />
+                    <div>
+                      <strong>{{ label }}</strong>
+                      <div class="text-muted small">{{ desc }}</div>
+                    </div>
+                  </label>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-between">
+              {% if mode == 'add' %}
+                <button type="button" class="btn btn-outline-secondary" onclick="history.back()">← Back</button>
+              {% elif mode == 'edit' %}
+                <button type="button" class="btn btn-outline-secondary" onclick="history.back()">← Back</button>
+              {% else %}
+                <button type="button" class="btn btn-outline-secondary" onclick="history.back()">← Back</button>
+              {% endif %}
+              <button type="submit" class="btn btn-primary">Next →</button>
+            </div>
+          </form>
+
+        <!-- ════════════════════════════════════════════════════════ STEP 4 -->
+        {% elif step == 4 %}
+          <h5 class="fw-bold mb-4">Step 4: Documentation &amp; Review</h5>
+
+          {% if mode == 'add' %}
+            {% set form_action = url_for('add_save') %}
+          {% elif mode == 'edit' %}
+            {% set form_action = url_for('edit_save', agent_id=agent.id) %}
+          {% else %}
+            {% set form_action = url_for('classify_save', agent_id=agent.id) %}
+          {% endif %}
+
+          <form method="POST" action="{{ form_action }}" novalidate id="wizardForm">
+            <div class="row g-4">
+              <!-- Left column: inputs -->
+              <div class="col-md-7">
+                <!-- Per-criterion rationale -->
+                {%- set rd = draft.get('rationale_data', {}) -%}
+                {%- set cx_lbl = {'black':'Black Swan','dark-grey':'Dark Grey Swan','light-grey':'Light Grey Swan','white':'White Swan'} -%}
+                {%- set adv_lbl = {'behavioral':'Behavioral','analytical':'Analytical','informational':'Informational'} -%}
+                <div class="mb-4">
+                  <h6 class="fw-bold mb-3" style="font-size:13px;color:var(--accent)">Criterion-level rationale</h6>
+
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold" style="font-size:12px">
+                      Comparative advantage
+                      {% if draft.get('advantage') %}
+                        <span class="badge ms-1 px-2" style="background:var(--accent-muted);color:var(--accent);font-size:10px;font-weight:600">
+                          {{ adv_lbl.get(draft.get('advantage'), draft.get('advantage')) }}
+                        </span>
+                      {% endif %}
+                    </label>
+                    <textarea name="rationale_advantage" class="form-control form-control-sm" rows="2"
+                              placeholder="Why does this agent have this comparative advantage?">{{ rd.get('advantage', '') }}</textarea>
+                  </div>
+
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold" style="font-size:12px">
+                      Complexity tier
+                      {% if draft.get('complexity') %}
+                        <span class="badge ms-1 px-2" style="background:var(--accent-muted);color:var(--accent);font-size:10px;font-weight:600">
+                          {{ cx_lbl.get(draft.get('complexity'), draft.get('complexity')) }}
+                        </span>
+                      {% endif %}
+                    </label>
+                    <textarea name="rationale_complexity" class="form-control form-control-sm" rows="2"
+                              placeholder="Why this complexity tier?">{{ rd.get('complexity', '') }}</textarea>
+                  </div>
+
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold" style="font-size:12px">
+                      Autonomy level
+                      {% if draft.get('autonomy') %}
+                        <span class="badge ms-1 px-2" style="background:var(--accent-muted);color:var(--accent);font-size:10px;font-weight:600">
+                          {{ draft.get('autonomy')|title }}
+                        </span>
+                      {% endif %}
+                    </label>
+                    <textarea name="rationale_autonomy" class="form-control form-control-sm" rows="2"
+                              placeholder="Why this autonomy level?">{{ rd.get('autonomy', '') }}</textarea>
+                  </div>
+
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold" style="font-size:12px">
+                      Agent type
+                      {% if draft.get('agent_type') %}
+                        <span class="badge ms-1 px-2" style="background:var(--accent-muted);color:var(--accent);font-size:10px;font-weight:600">
+                          {{ draft.get('agent_type')|replace('-',' ')|title }}
+                        </span>
+                      {% endif %}
+                    </label>
+                    <textarea name="rationale_agent_type" class="form-control form-control-sm" rows="2"
+                              placeholder="Why commercial / in-house / academic?">{{ rd.get('agent_type', '') }}</textarea>
+                  </div>
+
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold" style="font-size:12px">Process stages</label>
+                    <textarea name="rationale_stages" class="form-control form-control-sm" rows="2"
+                              placeholder="Why does this agent apply to these process stages?">{{ rd.get('stages', '') }}</textarea>
+                  </div>
+
+                  <div class="mb-0">
+                    <label class="form-label fw-semibold" style="font-size:12px">General comment</label>
+                    <textarea name="rationale_general" class="form-control form-control-sm" rows="3"
+                              placeholder="Any additional observations or overall context…">{{ rd.get('general', '') }}</textarea>
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label fw-semibold">Key features (3–5 bullet points)</label>
+                  <div id="featuresContainer">
+                    {% set features = draft.get('features', ['', '', '']) %}
+                    {% if not features %}{% set features = ['', '', ''] %}{% endif %}
+                    {% for feat in features %}
+                      <div class="d-flex gap-2 mb-2 feature-row">
+                        <input type="text" name="features" class="form-control form-control-sm"
+                               value="{{ feat }}" placeholder="Key feature…" />
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-feature"
+                                title="Remove">×</button>
+                      </div>
+                    {% endfor %}
+                  </div>
+                  <button type="button" class="btn btn-sm btn-outline-secondary mt-1"
+                          id="addFeatureBtn">+ Add feature</button>
+                  <div id="featuresError" class="text-danger small mt-1" style="display:none">
+                    At least one feature is required.
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right column: review summary -->
+              <div class="col-md-5">
+                <div class="card bg-light border-0 p-3">
+                  <h6 class="fw-bold mb-3">Review Summary</h6>
+                  {% set missing = [] %}
+                  {% if not draft.get('name') %}{% set _ = missing.append('Name') %}{% endif %}
+                  {% if not draft.get('agent_type') %}{% set _ = missing.append('Type') %}{% endif %}
+                  {% if not draft.get('stages') %}{% set _ = missing.append('Stage(s)') %}{% endif %}
+                  {% if not draft.get('complexity') %}{% set _ = missing.append('Complexity') %}{% endif %}
+                  {% if not draft.get('advantage') %}{% set _ = missing.append('Advantage') %}{% endif %}
+                  {% if not draft.get('autonomy') %}{% set _ = missing.append('Autonomy') %}{% endif %}
+
+                  {% if missing %}
+                    <div class="alert alert-danger py-2 px-3 small mb-3">
+                      Missing required fields: {{ missing | join(', ') }}
+                    </div>
+                  {% endif %}
+
+                  {% set stage_map_local = {
+                    'idea-gen':    'Idea Generation',
+                    'idea-assess': 'Idea Assessment',
+                    'decision':    'Decision Point',
+                    'execution':   'Execution',
+                    'monitoring':  'Monitoring',
+                    'compliance':  'Compliance',
+                    'stakeholder': 'Stakeholder Mgmt'
+                  } %}
+                  {% set cx_map_local = {
+                    'black':      'Black Swan',
+                    'dark-grey':  'Dark Grey Swan',
+                    'light-grey': 'Light Grey Swan',
+                    'white':      'White Swan'
+                  } %}
+                  {% set adv_map_local = {
+                    'behavioral':    'Behavioral',
+                    'analytical':    'Analytical',
+                    'informational': 'Informational'
+                  } %}
+
+                  <table class="table table-sm table-borderless mb-0">
+                    <tbody>
+                      <tr>
+                        <td class="text-muted small fw-semibold" style="width:40%">Name</td>
+                        <td class="small">{{ draft.get('name') or '—' }}</td>
+                      </tr>
+                      <tr>
+                        <td class="text-muted small fw-semibold">Type</td>
+                        <td class="small">{{ (draft.get('agent_type') or '—')|replace('-',' ')|title }}</td>
+                      </tr>
+                      <tr>
+                        <td class="text-muted small fw-semibold">Stage(s)</td>
+                        <td class="small">
+                          {% if draft.get('stages') %}
+                            {{ draft.stages | map('lower') | map('replace', '-', '-') | list | map('string') | join(', ') }}
+                          {% else %}—{% endif %}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="text-muted small fw-semibold">Complexity</td>
+                        <td class="small">{{ cx_map_local.get(draft.get('complexity'), draft.get('complexity') or '—') }}</td>
+                      </tr>
+                      <tr>
+                        <td class="text-muted small fw-semibold">Advantage</td>
+                        <td class="small">{{ adv_map_local.get(draft.get('advantage'), draft.get('advantage') or '—') }}</td>
+                      </tr>
+                      <tr>
+                        <td class="text-muted small fw-semibold">Autonomy</td>
+                        <td class="small">{{ (draft.get('autonomy') or '—')|title }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-between mt-4">
+              <button type="button" class="btn btn-outline-secondary" onclick="history.back()">← Back</button>
+              {% if missing %}
+                <button type="submit" class="btn btn-success" disabled>
+                  {% if mode == 'edit' %}Update Agent{% elif mode == 'classify' %}Classify Agent{% else %}Save Agent{% endif %}
+                </button>
+              {% else %}
+                <button type="submit" class="btn btn-success">
+                  {% if mode == 'edit' %}Update Agent{% elif mode == 'classify' %}Classify Agent{% else %}Save Agent{% endif %}
+                </button>
+              {% endif %}
+            </div>
+          </form>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Step 2: require at least 1 stage checked
+const wizardForm = document.getElementById("wizardForm");
+const stagesGroup = document.getElementById("stagesGroup");
+const stagesError = document.getElementById("stagesError");
+
+if (wizardForm && stagesGroup) {
+  wizardForm.addEventListener("submit", function(e) {
+    const checked = stagesGroup.querySelectorAll('input[type="checkbox"]:checked');
+    if (checked.length === 0) {
+      e.preventDefault();
+      stagesError.style.display = "";
+    }
+  });
+}
+
+// Step 1: validate name
+if (wizardForm && !stagesGroup) {
+  const nameInput = wizardForm.querySelector('input[name="name"]');
+  if (nameInput) {
+    wizardForm.addEventListener("submit", function(e) {
+      if (!nameInput.value.trim()) {
+        e.preventDefault();
+        nameInput.classList.add("is-invalid");
+      }
+    });
+  }
+}
+
+// Step 3: decision tree
+const dtBtns = document.querySelectorAll(".dt-btn");
+const dtQ1   = document.getElementById("dtQ1");
+const dtQ2   = document.getElementById("dtQ2");
+const dtQ3   = document.getElementById("dtQ3");
+const dtResult     = document.getElementById("dtResult");
+const dtResultLabel = document.getElementById("dtResultLabel");
+const dtResultDef   = document.getElementById("dtResultDef");
+
+const DT_MAP = {
+  "1-yes": { val: "white",      label: "White Swan",      def: "Statistical models / known distribution" },
+  "2-yes": { val: "light-grey", label: "Light Grey Swan", def: "Noise reduction / optimisation heuristics" },
+  "3-yes": { val: "dark-grey",  label: "Dark Grey Swan",  def: "Causal identification / scarce information" },
+  "3-no":  { val: "black",      label: "Black Swan",      def: "Deep uncertainty / robustness over optimality" },
+};
+
+function selectComplexity(val) {
+  document.querySelectorAll(".cx-radio").forEach(r => {
+    r.checked = (r.value === val);
+    const label = r.closest("label");
+    if (label) {
+      if (r.value === val) {
+        label.classList.add("border-primary", "bg-primary", "bg-opacity-10");
+      } else {
+        label.classList.remove("border-primary", "bg-primary", "bg-opacity-10");
+      }
+    }
+  });
+}
+
+dtBtns.forEach(btn => {
+  btn.addEventListener("click", function() {
+    const q = this.dataset.q;
+    const ans = this.dataset.answer;
+    const key = q + "-" + ans;
+
+    if (q === "1") {
+      if (ans === "yes") {
+        const m = DT_MAP["1-yes"];
+        selectComplexity(m.val);
+        showResult(m);
+        if (dtQ2) dtQ2.style.display = "none";
+        if (dtQ3) dtQ3.style.display = "none";
+      } else {
+        if (dtQ2) dtQ2.style.display = "";
+        if (dtQ3) dtQ3.style.display = "none";
+        if (dtResult) dtResult.style.display = "none";
+      }
+    } else if (q === "2") {
+      if (ans === "yes") {
+        const m = DT_MAP["2-yes"];
+        selectComplexity(m.val);
+        showResult(m);
+        if (dtQ3) dtQ3.style.display = "none";
+      } else {
+        if (dtQ3) dtQ3.style.display = "";
+        if (dtResult) dtResult.style.display = "none";
+      }
+    } else if (q === "3") {
+      const m = DT_MAP[key];
+      selectComplexity(m.val);
+      showResult(m);
+    }
+  });
+});
+
+function showResult(m) {
+  if (!dtResult) return;
+  dtResult.style.display = "";
+  dtResultLabel.textContent = m.label;
+  dtResultDef.textContent   = m.def;
+}
+
+// Manual override syncs highlight
+document.querySelectorAll(".cx-radio").forEach(r => {
+  r.addEventListener("change", function() {
+    document.querySelectorAll(".cx-option").forEach(lbl => {
+      lbl.classList.remove("border-primary", "bg-primary", "bg-opacity-10");
+    });
+    this.closest("label").classList.add("border-primary", "bg-primary", "bg-opacity-10");
+  });
+});
+
+// Step 4: dynamic features list
+const featuresContainer = document.getElementById("featuresContainer");
+const addFeatureBtn     = document.getElementById("addFeatureBtn");
+const featuresError     = document.getElementById("featuresError");
+
+function addFeatureRow(value) {
+  const row = document.createElement("div");
+  row.className = "d-flex gap-2 mb-2 feature-row";
+  row.innerHTML = `
+    <input type="text" name="features" class="form-control form-control-sm"
+           value="${value || ''}" placeholder="Key feature…" />
+    <button type="button" class="btn btn-sm btn-outline-danger remove-feature" title="Remove">×</button>
+  `;
+  featuresContainer.appendChild(row);
+  row.querySelector(".remove-feature").addEventListener("click", removeFeature);
+}
+
+function removeFeature() {
+  const rows = document.querySelectorAll(".feature-row");
+  if (rows.length <= 1) return;
+  this.closest(".feature-row").remove();
+}
+
+if (addFeatureBtn) {
+  addFeatureBtn.addEventListener("click", () => addFeatureRow(""));
+}
+
+document.querySelectorAll(".remove-feature").forEach(btn => {
+  btn.addEventListener("click", removeFeature);
+});
+
+if (wizardForm && featuresContainer) {
+  wizardForm.addEventListener("submit", function(e) {
+    const inputs = featuresContainer.querySelectorAll('input[name="features"]');
+    const anyFilled = Array.from(inputs).some(i => i.value.trim());
+    if (!anyFilled) {
+      e.preventDefault();
+      if (featuresError) featuresError.style.display = "";
+    }
+  });
+}
+</script>
+{% endblock %}

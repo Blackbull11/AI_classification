@@ -1,0 +1,955 @@
+{% extends "base.html" %}
+{% block title %}Matrix — AI Agent Classifier{% endblock %}
+
+{% block content %}
+<!-- Header row -->
+<div class="d-flex align-items-start justify-content-between mt-4 mb-3">
+  <div>
+    <div class="d-flex align-items-baseline gap-3 mb-1">
+      <h4 class="mb-0 fw-bold page-title">AI Agent Classification Matrix</h4>
+      <span class="page-title-date">{{ today.strftime('%d %B %Y') }}</span>
+    </div>
+    <p class="page-citation mb-0">
+      Based on&nbsp;
+      <a href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6290078"
+         target="_blank" rel="noopener" class="citation-link">
+        Schuller, Wierckx, Kuhn &amp; Zilic — <em>A Multi-Dimensional Classification System For AI Agents In The Investment Industry</em> (2025)
+      </a>
+    </p>
+  </div>
+  <div class="d-flex gap-2 align-items-center">
+    <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal"
+            data-bs-target="#quickAddModal">
+      + Quick Add
+    </button>
+    <a href="{{ url_for('add_agent') }}" class="btn btn-primary btn-sm">
+      Full Wizard →
+    </a>
+  </div>
+</div>
+
+<!-- Pending notification banner -->
+{% if pending_count > 0 %}
+<div class="pending-banner d-flex align-items-center justify-content-between mb-3">
+  <span>⏳ {{ pending_count }} agent(s) pending classification</span>
+  <a href="{{ url_for('pipeline') }}" class="fw-semibold text-decoration-none" style="color:var(--accent)">
+    Go to pipeline →
+  </a>
+</div>
+{% endif %}
+
+<!-- Stats row -->
+<div class="row g-2 mb-2">
+
+  <!-- Classified agents -->
+  <div class="col-6 col-sm-3 col-lg">
+    <div class="card stat-card border-0 shadow-sm h-100">
+      <div class="card-body py-2 px-3">
+        <div class="stat-group-title">Portfolio</div>
+        <div class="stat-value">{{ total_classified }}</div>
+        <div class="stat-label">Classified agents</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Swan complexity -->
+  <div class="col-6 col-sm-3 col-lg">
+    <div class="card stat-card border-0 shadow-sm h-100">
+      <div class="card-body py-2 px-3">
+        <div class="stat-group-title">Swan Complexity</div>
+        <div class="d-flex align-items-start gap-3">
+          <div>
+            <div class="stat-value" style="color:#E87070">{{ black_swan_count }}</div>
+            <div class="stat-label">Black Swan</div>
+          </div>
+          <div class="stat-divider"></div>
+          <div>
+            <div class="stat-value" style="color:#A0A8B8">{{ dark_grey_count }}</div>
+            <div class="stat-label">Dark Grey Swan</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comparative advantage -->
+  <div class="col-6 col-sm-3 col-lg">
+    <div class="card stat-card border-0 shadow-sm h-100">
+      <div class="card-body py-2 px-3">
+        <div class="stat-group-title">Comparative Advantage</div>
+        <div class="d-flex align-items-start gap-3">
+          <div>
+            <div class="stat-value" style="color:var(--ana)">{{ analytical_pct }}%</div>
+            <div class="stat-label">Analytical</div>
+          </div>
+          <div class="stat-divider"></div>
+          <div>
+            <div class="stat-value" style="color:var(--beh)">{{ behavioral_count }}</div>
+            <div class="stat-label">Behavioral</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Autonomy -->
+  <div class="col-6 col-sm-3 col-lg">
+    <div class="card stat-card border-0 shadow-sm h-100">
+      <div class="card-body py-2 px-3">
+        <div class="stat-group-title">Autonomy</div>
+        <div class="d-flex align-items-start gap-3">
+          <div>
+            <div class="stat-value">{{ low_autonomy_pct }}%</div>
+            <div class="stat-label">Low autonomy</div>
+          </div>
+          <div class="stat-divider"></div>
+          <div>
+            <div class="stat-value" style="color:#C8A0D8">{{ full_autonomy_count }}</div>
+            <div class="stat-label">Fully autonomous</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- View toggle -->
+<div class="d-flex align-items-center gap-3 mb-2">
+  <span class="text-muted fw-semibold" style="font-size:12px;white-space:nowrap">View:</span>
+  <div class="view-toggle-group" id="viewToggleGroup">
+    <button class="vt-btn active" data-view="matrix">Classification Matrix</button>
+    <button class="vt-btn" data-view="advmatrix">Stage × Advantage</button>
+    <button class="vt-btn" data-view="scatter">Autonomy Scatter</button>
+  </div>
+</div>
+
+<!-- Filter bar row -->
+<div class="d-flex align-items-center gap-3 mb-2 flex-wrap">
+  <div class="d-flex align-items-center gap-2 flex-wrap">
+    <span class="text-muted fw-semibold" style="font-size:12px;white-space:nowrap">Advantage:</span>
+    <div class="matrix-filter-group" id="matrixFilterGroup">
+      <button class="mf-btn active" data-adv="all">All</button>
+      <button class="mf-btn mf-btn-beh" data-adv="behavioral">Behavioral</button>
+      <button class="mf-btn mf-btn-ana" data-adv="analytical">Analytical</button>
+      <button class="mf-btn mf-btn-inf" data-adv="informational">Informational</button>
+    </div>
+    <span class="text-muted small" id="filterResultCount" style="display:none"></span>
+  </div>
+  <div class="d-flex align-items-center gap-2 flex-wrap">
+    <span class="text-muted fw-semibold" style="font-size:12px;white-space:nowrap">Stage view:</span>
+    <div class="stage-filter-group" id="stageFilterGroup">
+      {% for stage_key, stage_label in stages %}
+      <button class="sf-btn sf-btn-{{ stage_key }}"
+              data-stage="{{ stage_key }}"
+              data-label="{{ stage_label }}">{{ stage_label }}</button>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Stage filtered panel -->
+<div id="stagePanel" class="stage-panel mb-4" style="display:none">
+  <div class="stage-panel-header">
+    <div class="d-flex align-items-center gap-2">
+      <span id="stagePanelDot" class="stage-panel-dot"></span>
+      <span id="stagePanelTitle" class="stage-panel-title"></span>
+      <span id="stagePanelCount" class="stage-panel-count"></span>
+    </div>
+    <button class="stage-panel-close" onclick="closeStagePanel()">✕ Close</button>
+  </div>
+  <div id="stagePanelLanes"></div>
+</div>
+
+<!-- Matrix -->
+<div class="matrix-widget mb-4" id="matrixView">
+  <!-- Advantage colour legend -->
+  <div class="matrix-legend">
+    <span class="legend-label">Comparative advantage:</span>
+    <span class="legend-item legend-beh">Behavioral</span>
+    <span class="legend-item legend-ana">Analytical</span>
+    <span class="legend-item legend-inf">Informational</span>
+    <span class="legend-sep">·</span>
+    <span class="legend-item legend-type-com">Commercial</span>
+    <span class="legend-item legend-type-inh">In-house</span>
+    <span class="legend-item legend-type-aca">Academic</span>
+    <span class="legend-sep">·</span>
+    <span class="legend-label">Autonomy pip:</span>
+    <span class="legend-aut legend-aut-low">Low</span>
+    <span class="legend-aut legend-aut-med">Medium</span>
+    <span class="legend-aut legend-aut-high">High</span>
+    <span class="legend-aut legend-aut-full">Fully autonomous</span>
+  </div>
+  <div class="matrix-scroll">
+    <table class="matrix-table matrix-table-3d">
+      <thead>
+        <tr>
+          <th class="label-col matrix-corner"></th>
+          {% for stage_key, stage_label in stages %}
+            <th class="stage-header stage-cube stage-{{ stage_key }}">{{ stage_label }}</th>
+          {% endfor %}
+          <th class="total-col matrix-total-hdr text-center">Total</th>
+        </tr>
+      </thead>
+    <tbody>
+      {% set cx_subtitles = {
+        'black':      'Unknown unknowns',
+        'dark-grey':  'Scarce info / causation-based',
+        'light-grey': 'Noise reduction / simplifying',
+        'white':      'Statistical / deterministic'
+      } %}
+
+      {% for cx_key, cx_label in complexities %}
+        {% set row_class = {
+          'black':      'row-black',
+          'dark-grey':  'row-dark-grey',
+          'light-grey': 'row-light-grey',
+          'white':      'row-white'
+        }[cx_key] %}
+
+        <tr class="{{ row_class }}">
+          <!-- Label column -->
+          <td class="label-cell lc-{{ cx_key }}">
+            <div class="cx-label-text">
+              <span class="cx-name fw-bold">{{ cx_label }}</span>
+              <span class="cx-sub d-block">{{ cx_subtitles[cx_key] }}</span>
+            </div>
+          </td>
+
+          <!-- Stage cells — all advantages merged, colors distinguish them -->
+          {% for stage_key, stage_label in stages %}
+            {% set cell_agents = matrix_flat[cx_key][stage_key] %}
+            <td class="matrix-cell">
+              <div class="cell-inner">
+                {% if cell_agents %}
+                  {% if cell_agents|length > 1 %}
+                    <span class="cell-count-badge">×{{ cell_agents|length }}</span>
+                  {% endif %}
+                  {% for agent in cell_agents %}
+                    <div class="badge-container" data-adv="{{ agent.advantage }}" data-autonomy="{{ agent.autonomy }}">
+                      {%- set adv_type = agent.advantage -%}
+                      {%- set agt_type = agent.agent_type -%}
+                      <a href="{{ agent.url or '#' }}"
+                         target="_blank" rel="noopener"
+                         class="agent-badge badge-{{ adv_type }}-{{ agt_type }}">{{ agent.name }}</a>
+                      <div class="badge-hover-card">
+                        <div class="bhc-name">{{ agent.name }}</div>
+                        <div class="bhc-meta">
+                          {{ (agent.advantage or '')|title }}
+                          {% if agent.agent_type %} · {{ agent.agent_type|replace('-',' ')|title }}{% endif %}
+                          {% if agent.autonomy %}
+                            {% if agent.autonomy == 'full' %} · Fully Autonomous
+                            {% else %} · {{ agent.autonomy|title }} autonomy{% endif %}
+                          {% endif %}
+                        </div>
+                        {% if agent.description %}
+                          <div class="bhc-desc">{{ agent.description[:100] }}{% if agent.description|length > 100 %}…{% endif %}</div>
+                        {% endif %}
+                        <div class="bhc-actions">
+                          <a href="{{ url_for('agent_detail', agent_id=agent.id) }}" class="bhc-btn-primary">Details →</a>
+                          <a href="{{ url_for('edit_agent', agent_id=agent.id) }}" class="bhc-btn-secondary">Edit ✎</a>
+                        </div>
+                      </div>
+                    </div>
+                  {% endfor %}
+                {% else %}
+                  <span class="empty-circle
+                    {% if cx_key == 'black' %}empty-circle-black{% endif %}"></span>
+                {% endif %}
+              </div>
+            </td>
+          {% endfor %}
+
+          <!-- Row total -->
+          <td class="total-cell text-center">
+            <strong>{{ row_totals[cx_key] }}</strong>
+          </td>
+        </tr>
+      {% endfor %}
+
+      <!-- Column totals row -->
+      <tr class="totals-row">
+        <td class="label-cell totals-label fw-bold">Total</td>
+        {% for stage_key, stage_label in stages %}
+          <td class="matrix-cell-total text-center fw-bold">{{ col_totals[stage_key] }}</td>
+        {% endfor %}
+        <td class="matrix-cell-total text-center fw-bold">{{ grand_total }}</td>
+      </tr>
+
+      <!-- Color totals row -->
+      <tr class="totals-row">
+        <td class="label-cell totals-label fw-bold">By advantage</td>
+        <td colspan="{{ stages|length }}" class="matrix-cell-total text-center">
+          <span class="fw-semibold" style="color:var(--beh)">BEH: {{ adv_totals.behavioral }}</span>
+          &nbsp;&nbsp;&nbsp;
+          <span class="fw-semibold" style="color:var(--ana)">ANA: {{ adv_totals.analytical }}</span>
+          &nbsp;&nbsp;&nbsp;
+          <span class="fw-semibold" style="color:var(--inf)">INF: {{ adv_totals.informational }}</span>
+        </td>
+        <td class="matrix-cell-total"></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- Stage × Advantage Matrix -->
+<div id="advMatrixView" class="matrix-widget mb-4" style="display:none">
+  <div class="matrix-legend">
+    <span class="legend-label">Complexity box:</span>
+    <span class="legend-cx-item legend-cx-black">Black Swan</span>
+    <span class="legend-cx-item legend-cx-dark-grey">Dark Grey</span>
+    <span class="legend-cx-item legend-cx-light-grey">Light Grey</span>
+    <span class="legend-cx-item legend-cx-white">White Swan</span>
+    <span class="legend-sep">·</span>
+    <span class="legend-item legend-type-com">Commercial</span>
+    <span class="legend-item legend-type-inh">In-house</span>
+    <span class="legend-item legend-type-aca">Academic</span>
+    <span class="legend-sep">·</span>
+    <span class="legend-label">Autonomy pip:</span>
+    <span class="legend-aut legend-aut-low">Low</span>
+    <span class="legend-aut legend-aut-med">Medium</span>
+    <span class="legend-aut legend-aut-high">High</span>
+    <span class="legend-aut legend-aut-full">Fully autonomous</span>
+  </div>
+  <div class="matrix-scroll">
+    {% set complexity_map = dict(complexities) %}
+    {% set adv_subtitles = {
+      'behavioral':    'Removes cognitive bias',
+      'analytical':    'Superior processing / modelling',
+      'informational': 'Better data access / aggregation'
+    } %}
+    <table class="matrix-table matrix-table-3d adv-matrix-table">
+      <thead>
+        <tr>
+          <th class="label-col matrix-corner"></th>
+          {% for stage_key, stage_label in stages %}
+            <th class="stage-header stage-cube stage-{{ stage_key }}">{{ stage_label }}</th>
+          {% endfor %}
+          <th class="total-col matrix-total-hdr text-center">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for adv_key, adv_label in advantages %}
+          <tr>
+            <td class="label-cell lc-adv lc-adv-{{ adv_key }}">
+              <div class="cx-label-text">
+                <span class="cx-name fw-bold">{{ adv_label }}</span>
+                <span class="cx-sub d-block">{{ adv_subtitles[adv_key] }}</span>
+              </div>
+            </td>
+
+            {% for stage_key, stage_label in stages %}
+              {% set cell_agents = adv_matrix[adv_key][stage_key] %}
+              <td class="matrix-cell">
+                <div class="cell-inner">
+                  {% if cell_agents %}
+                    {% if cell_agents|length > 1 %}
+                      <span class="cell-count-badge">×{{ cell_agents|length }}</span>
+                    {% endif %}
+                    {% for agent in cell_agents %}
+                      <div class="badge-container" data-adv="{{ agent.advantage }}" data-autonomy="{{ agent.autonomy }}" data-complexity="{{ agent.complexity }}">
+                        {%- set adv_type = agent.advantage -%}
+                        {%- set agt_type = agent.agent_type -%}
+                        <a href="{{ agent.url or '#' }}"
+                           target="_blank" rel="noopener"
+                           class="agent-badge badge-{{ adv_type }}-{{ agt_type }} badge-has-cx">
+                          <span class="cx-mini cx-mini-{{ agent.complexity or 'white' }}"></span>{{ agent.name }}</a>
+                        <div class="badge-hover-card">
+                          <div class="bhc-name">{{ agent.name }}</div>
+                          <div class="bhc-meta">
+                            {{ (agent.advantage or '')|title }}
+                            {% if agent.agent_type %} · {{ agent.agent_type|replace('-',' ')|title }}{% endif %}
+                            {% if agent.autonomy %}
+                              {% if agent.autonomy == 'full' %} · Fully Autonomous
+                              {% else %} · {{ agent.autonomy|title }} autonomy{% endif %}
+                            {% endif %}
+                            {% if agent.complexity %} · {{ complexity_map.get(agent.complexity, agent.complexity) }}{% endif %}
+                          </div>
+                          {% if agent.description %}
+                            <div class="bhc-desc">{{ agent.description[:100] }}{% if agent.description|length > 100 %}…{% endif %}</div>
+                          {% endif %}
+                          <div class="bhc-actions">
+                            <a href="{{ url_for('agent_detail', agent_id=agent.id) }}" class="bhc-btn-primary">Details →</a>
+                            <a href="{{ url_for('edit_agent', agent_id=agent.id) }}" class="bhc-btn-secondary">Edit ✎</a>
+                          </div>
+                        </div>
+                      </div>
+                    {% endfor %}
+                  {% else %}
+                    <span class="empty-circle"></span>
+                  {% endif %}
+                </div>
+              </td>
+            {% endfor %}
+
+            <td class="total-cell text-center">
+              <strong>{{ adv_row_totals[adv_key] }}</strong>
+            </td>
+          </tr>
+        {% endfor %}
+
+        <tr class="totals-row">
+          <td class="label-cell totals-label fw-bold">Total</td>
+          {% for stage_key, stage_label in stages %}
+            <td class="matrix-cell-total text-center fw-bold">{{ col_totals[stage_key] }}</td>
+          {% endfor %}
+          <td class="matrix-cell-total text-center fw-bold">{{ grand_total }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Scatter View -->
+<div id="scatterView" class="scatter-widget mb-4" style="display:none">
+  <div class="scatter-legend">
+    <span class="legend-label">Bar fill (complexity):</span>
+    <span class="scatter-cx-item scatter-cx-black">Black Swan</span>
+    <span class="scatter-cx-item scatter-cx-dark-grey">Dark Grey</span>
+    <span class="scatter-cx-item scatter-cx-light-grey">Light Grey</span>
+    <span class="scatter-cx-item scatter-cx-white">White Swan</span>
+    <span class="legend-sep">·</span>
+    <span class="legend-label">Border color (advantage):</span>
+    <span class="legend-item legend-beh">Behavioral</span>
+    <span class="legend-item legend-ana">Analytical</span>
+    <span class="legend-item legend-inf">Informational</span>
+    <span class="scatter-hint">Higher position = more autonomous · hover for details · click to open agent profile</span>
+  </div>
+  <div id="scatterSvgContainer"></div>
+</div>
+<div class="scatter-tooltip" id="scatterTooltip"></div>
+
+<!-- Observations -->
+<div class="mb-4">
+  <label for="observationsBox" class="form-label fw-semibold">Observations</label>
+  <textarea id="observationsBox" class="form-control" rows="4"
+            placeholder="Add observations about this classification snapshot…"></textarea>
+  <small id="savedIndicator" class="ms-1" style="opacity:0; transition:opacity 0.5s; color:var(--ana)">
+    Saved ✓
+  </small>
+</div>
+
+<!-- Distribution charts -->
+<div class="row g-3 mb-5">
+  <!-- Chart 1: Agents per process stage -->
+  <div class="col-md-7">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h6 class="card-title fw-bold mb-3">Agents per process stage</h6>
+        {% set max_c = max_stage_count if max_stage_count > 0 else 1 %}
+        {% for label, count in stage_counts %}
+          {% set pct = (count / max_c * 100)|int %}
+          {% set is_max = (count == max_c and count > 0) %}
+          <div class="d-flex align-items-center mb-2 gap-2">
+            <span class="chart-label text-end text-muted" style="min-width:130px;font-size:11px">
+              {{ label }}
+            </span>
+            <div class="chart-bar-track flex-grow-1">
+              {% if count > 0 %}
+                <div class="chart-bar"
+                     style="width:{{ pct }}%;background:{% if is_max %}var(--accent){% else %}rgba(196,132,90,0.30){% endif %}">
+                </div>
+              {% endif %}
+            </div>
+            <span class="chart-count" style="min-width:24px;font-size:11px;color:{% if is_max %}var(--accent){% else %}var(--text-secondary){% endif %}">
+              {{ count }}
+            </span>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart 2: By comparative advantage -->
+  <div class="col-md-5">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h6 class="card-title fw-bold mb-3">By comparative advantage</h6>
+        {% set max_adv = [adv_totals.informational, adv_totals.analytical, adv_totals.behavioral]|max %}
+        {% set max_adv_safe = max_adv if max_adv > 0 else 1 %}
+        {% for label, count, color in adv_bar_data %}
+          {% set pct = (count / max_adv_safe * 100)|int %}
+          {% set count_pct = ((count / adv_total_for_pct) * 100)|int if adv_total_for_pct > 0 else 0 %}
+          <div class="d-flex align-items-center mb-2 gap-2">
+            <span class="chart-label text-end" style="min-width:100px;font-size:11px;color:{{ color }}">
+              {{ label }}
+            </span>
+            <div class="chart-bar-track flex-grow-1">
+              {% if count > 0 %}
+                <div class="chart-bar" style="width:{{ pct }}%;background:{{ color }}"></div>
+              {% endif %}
+            </div>
+            <span class="chart-count" style="min-width:48px;font-size:11px;color:{{ color }}">
+              {{ count }} ({{ count_pct }}%)
+            </span>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Add Modal -->
+<div class="modal fade" id="quickAddModal" tabindex="-1" aria-labelledby="quickAddLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="quickAddLabel">Add agent to pipeline</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('quick_add') }}" novalidate
+            id="quickAddForm">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Agent name <span class="text-danger">*</span></label>
+            <input type="text" name="name" class="form-control" required
+                   placeholder="e.g. OpenAI Operator" />
+            <div class="invalid-feedback">Agent name is required.</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Source URL</label>
+            <input type="url" name="url" class="form-control"
+                   placeholder="https://..." />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary"
+                  data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add to Pipeline</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Observations localStorage
+const OBS_KEY = "matrix_observations";
+const obsBox  = document.getElementById("observationsBox");
+const savedEl = document.getElementById("savedIndicator");
+
+if (obsBox) {
+  obsBox.value = localStorage.getItem(OBS_KEY) || "";
+  obsBox.addEventListener("blur", () => {
+    localStorage.setItem(OBS_KEY, obsBox.value);
+    savedEl.style.opacity = "1";
+    setTimeout(() => { savedEl.style.opacity = "0"; }, 2000);
+  });
+}
+
+// Matrix advantage filter
+(function () {
+  const filterGroup = document.getElementById('matrixFilterGroup');
+  const resultCount = document.getElementById('filterResultCount');
+  if (!filterGroup) return;
+
+  filterGroup.addEventListener('click', function (e) {
+    const btn = e.target.closest('.mf-btn');
+    if (!btn) return;
+    const adv = btn.dataset.adv;
+
+    filterGroup.querySelectorAll('.mf-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    const containers = document.querySelectorAll('#matrixView .badge-container');
+    let visible = 0;
+    containers.forEach(bc => {
+      if (adv === 'all') {
+        bc.classList.remove('mf-dimmed');
+        visible++;
+      } else {
+        const match = bc.dataset.adv === adv;
+        bc.classList.toggle('mf-dimmed', !match);
+        if (match) visible++;
+      }
+    });
+
+    if (adv === 'all') {
+      resultCount.style.display = 'none';
+    } else {
+      resultCount.textContent = visible + ' agent' + (visible !== 1 ? 's' : '') + ' shown';
+      resultCount.style.display = '';
+    }
+  });
+})();
+
+// Quick-add form validation
+const quickAddForm = document.getElementById("quickAddForm");
+if (quickAddForm) {
+  quickAddForm.addEventListener("submit", function(e) {
+    const nameInput = this.querySelector("input[name='name']");
+    if (!nameInput.value.trim()) {
+      e.preventDefault();
+      nameInput.classList.add("is-invalid");
+      return;
+    }
+    nameInput.classList.remove("is-invalid");
+  });
+}
+
+// ── Stage filtered panel ──────────────────────────────────────────────
+(function () {
+  const ALL_AGENTS = {{ agents_json | safe }};
+
+  const CX_ORDER = ['black', 'dark-grey', 'light-grey', 'white'];
+  const CX_META = {
+    'black':      { label: 'Black Swan',       sub: 'Unknown unknowns' },
+    'dark-grey':  { label: 'Dark Grey Swan',   sub: 'Scarce info / causation-based' },
+    'light-grey': { label: 'Light Grey Swan',  sub: 'Noise reduction / simplifying' },
+    'white':      { label: 'White Swan',       sub: 'Statistical / deterministic' },
+  };
+  const STAGE_COLORS = {
+    'idea-gen':    '#4A7A3A', 'idea-assess': '#C8A828', 'decision':    '#6478C0',
+    'execution':   '#CC7830', 'monitoring':  '#9868A8', 'compliance':  '#3A9888',
+    'stakeholder': '#C04848',
+  };
+  const ADV_COLORS = {
+    behavioral: '#E0613A', analytical: '#1DB87A', informational: '#EF9F27',
+  };
+
+  let activeStage = null;
+
+  document.getElementById('stageFilterGroup').addEventListener('click', function (e) {
+    const btn = e.target.closest('.sf-btn');
+    if (!btn) return;
+    const stage = btn.dataset.stage;
+    const label = btn.dataset.label;
+    if (activeStage === stage) { closeStagePanel(); return; }
+    activeStage = stage;
+    document.querySelectorAll('.sf-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderStagePanel(stage, label);
+  });
+
+  function renderStagePanel(stage, label) {
+    const agents = ALL_AGENTS.filter(a => a.stages && a.stages.includes(stage));
+    const color  = STAGE_COLORS[stage] || 'var(--accent)';
+
+    document.getElementById('stagePanelDot').style.background  = color;
+    document.getElementById('stagePanelTitle').textContent      = label;
+    document.getElementById('stagePanelCount').textContent      =
+      agents.length + ' agent' + (agents.length !== 1 ? 's' : '');
+
+    const lanes = document.getElementById('stagePanelLanes');
+    lanes.innerHTML = '';
+
+    CX_ORDER.forEach(cx => {
+      const cxAgents = agents.filter(a => a.complexity === cx);
+      const meta = CX_META[cx];
+
+      const lane = document.createElement('div');
+      lane.className = 'cx-lane';
+
+      const cards = cxAgents.length
+        ? cxAgents.map(a => cardHtml(a)).join('')
+        : '<div class="cx-lane-empty">No agents at this complexity level</div>';
+
+      lane.innerHTML = `
+        <div class="cx-lane-header">
+          <div class="cx-lane-swatch cx-swatch-${cx}"></div>
+          <div>
+            <div class="cx-lane-name">${meta.label}</div>
+            <div class="cx-lane-sub">${meta.sub}</div>
+          </div>
+          <span class="cx-lane-count">${cxAgents.length}</span>
+        </div>
+        <div class="cx-lane-cards">${cards}</div>`;
+      lanes.appendChild(lane);
+    });
+
+    const panel = document.getElementById('stagePanel');
+    panel.style.display = '';
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function cardHtml(a) {
+    const color  = ADV_COLORS[a.advantage] || '#888';
+    const advPill = a.advantage
+      ? `<span class="spc-adv-pill" style="color:${color};border-color:${color}50;background:${color}18">${cap(a.advantage)}</span>`
+      : '';
+    const meta = [
+      a.agent_type ? capType(a.agent_type) : null,
+      a.autonomy   ? cap(a.autonomy) + ' autonomy' : null,
+    ].filter(Boolean).map(t => `<span class="spc-meta-pill">${esc(t)}</span>`).join('');
+    const feats = (a.features || []).filter(f => f && f.trim()).slice(0, 3);
+    const featHtml = feats.length
+      ? `<ul class="spc-features">${feats.map(f => `<li>${esc(f)}</li>`).join('')}</ul>` : '';
+    const linkBtn = a.url
+      ? `<a href="${esc(a.url)}" target="_blank" rel="noopener" class="spc-btn-link">↗ Source</a>` : '';
+    return `
+      <div class="stage-panel-card">
+        <div class="spc-top">
+          <a href="/agents/${a.id}" class="spc-name">${esc(a.name)}</a>
+          ${advPill}
+        </div>
+        ${meta ? `<div class="spc-meta">${meta}</div>` : ''}
+        ${a.description ? `<p class="spc-desc">${esc(a.description)}</p>` : ''}
+        ${featHtml}
+        <div class="spc-actions">
+          <a href="/agents/${a.id}" class="spc-btn-details">Details →</a>
+          ${linkBtn}
+        </div>
+      </div>`;
+  }
+
+  window.closeStagePanel = function () {
+    activeStage = null;
+    document.querySelectorAll('.sf-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('stagePanel').style.display = 'none';
+  };
+
+  function cap(s)     { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+  function capType(s) { return s ? s.split('-').map(cap).join('-') : ''; }
+  function esc(s)     {
+    return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+                         .replace(/>/g,'&gt;').replace(/"/g,'&quot;') : '';
+  }
+})();
+
+// ── Autonomy Scatter Plot ─────────────────────────────────────────────────────
+(function () {
+  const SCATTER_AGENTS = {{ agents_json | safe }};
+
+  const STAGE_KEYS_S   = ['idea-gen','idea-assess','decision','execution','monitoring','compliance','stakeholder'];
+  const STAGE_LABELS_S = [['Idea','Gen'],['Idea','Assess'],['Decision','Point'],['Execution',''],['Monitoring',''],['Compliance',''],['Stakeholder','Mgmt']];
+  const STAGE_COLORS_S = {
+    'idea-gen':'#4A7A3A','idea-assess':'#C8A828','decision':'#6478C0',
+    'execution':'#CC7830','monitoring':'#9868A8','compliance':'#3A9888','stakeholder':'#C04848',
+  };
+  const AUTONOMY_BASE = { low: 0, medium: 1, high: 2, full: 3 };
+  const CX_FILL   = { 'black':'#1E1E1E', 'dark-grey':'#505050', 'light-grey':'#B0B0B0', 'white':'#E8E4DC' };
+  const CX_STROKE = { 'black':'#555',    'dark-grey':'#787878', 'light-grey':'#888',    'white':'#A8A090' };
+  const ADV_TEXT  = { behavioral:'#A02C10', analytical:'#0E6848', informational:'#A06C00' };
+  const CX_LABELS = { 'black':'Black Swan', 'dark-grey':'Dark Grey Swan', 'light-grey':'Light Grey Swan', 'white':'White Swan' };
+
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  function svgEl(tag, attrs, text) {
+    const e = document.createElementNS(SVG_NS, tag);
+    for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, v);
+    if (text != null) e.textContent = text;
+    return e;
+  }
+
+  function renderScatter(agents) {
+    const AU_ORDER  = { full: 0, high: 1, medium: 2, low: 3 };
+    const AU_COLORS = { full: '#C04848', high: '#9868A8', medium: '#6478C0', low: '#3A9888' };
+    const AU_LBLS   = { full: ['FULLY','AUTON.'], high: ['HIGH',null], medium: ['MEDIUM',null], low: ['LOW',null] };
+    const ADV_ON_DARK  = { behavioral:'#E07060', analytical:'#30C890', informational:'#F0B040' };
+    const ADV_ON_LIGHT = { behavioral:'#7A1800', analytical:'#00502C', informational:'#7A5000' };
+
+    // Merge adjacent stage indices into contiguous segments ([start, end] pairs)
+    function toSegments(idxs) {
+      if (!idxs.length) return [];
+      const out = []; let s=idxs[0], p=idxs[0];
+      for (let i=1; i<idxs.length; i++) {
+        if (idxs[i]===p+1) { p=idxs[i]; } else { out.push([s,p]); s=p=idxs[i]; }
+      }
+      out.push([s,p]); return out;
+    }
+
+    // Build one chart item per agent
+    const items = agents.map(a => {
+      const covIdxs = (a.stages||[]).map(s=>STAGE_KEYS_S.indexOf(s)).filter(i=>i>=0).sort((a,b)=>a-b);
+      if (!covIdxs.length) return null;
+      const segs    = toSegments(covIdxs);
+      const isDark  = a.complexity==='black' || a.complexity==='dark-grey';
+      const textCol = isDark ? (ADV_ON_DARK[a.advantage]||'#E8E0D0') : (ADV_ON_LIGHT[a.advantage]||'#3A2810');
+      return { a, covIdxs, segs, minStage:covIdxs[0], maxStage:covIdxs[covIdxs.length-1], textCol };
+    }).filter(Boolean);
+
+    // Group into autonomy bands (top = most autonomous)
+    const bands = ['full','high','medium','low'].map(k => ({
+      key:k, color:AU_COLORS[k], lbls:AU_LBLS[k],
+      items: items.filter(it=>it.a.autonomy===k).sort((a,b)=>a.minStage-b.minStage||a.maxStage-b.maxStage),
+    })).filter(b=>b.items.length>0);
+
+    // Greedy row-packing within each band
+    bands.forEach(band => {
+      const rows = [];
+      band.items.forEach(item => {
+        let placed=false;
+        for (const row of rows) {
+          if (!row.some(ex=>item.minStage<=ex.maxStage && item.maxStage>=ex.minStage)) { row.push(item); placed=true; break; }
+        }
+        if (!placed) rows.push([item]);
+      });
+      band.rows = rows;
+    });
+
+    // Layout: left Y-axis label column + chart area
+    const W=1000, LABEL_W=88, PR=10, TOP_PAD=50;
+    const BAR_H=18, ROW_H=BAR_H+7;
+    const BAND_PAD=9;
+    const CHART_W=W-LABEL_W-PR, N=STAGE_KEYS_S.length;
+    const COL_W=CHART_W/N, SEG_GAP=7;
+    // x coordinates within the plot area
+    const colCx  = i => LABEL_W + (i+0.5)*COL_W;
+    const segL   = s => LABEL_W + s*COL_W + SEG_GAP/2;
+    const segR   = e => LABEL_W + (e+1)*COL_W - SEG_GAP/2;
+
+    bands.forEach(b => { b.h = BAND_PAD*2 + b.rows.length*ROW_H; });
+    let totalH = TOP_PAD;
+    bands.forEach(b => totalH += b.h);
+    totalH += 10;
+
+    const svg = svgEl('svg', { viewBox:`0 0 ${W} ${totalH}`, width:'100%', style:'display:block;min-width:680px' });
+    svg.appendChild(svgEl('rect', {x:0,y:0,width:W,height:totalH,fill:'#FAF7F1'}));
+
+    // Stage column alternating tints (plot area only)
+    STAGE_KEYS_S.forEach((_,i) => {
+      if (i%2===0) svg.appendChild(svgEl('rect', {x:LABEL_W+i*COL_W,y:TOP_PAD-4,width:COL_W,height:totalH-TOP_PAD+4-10,fill:'rgba(140,100,50,0.04)'}));
+    });
+
+    // Vertical Y-axis line
+    svg.appendChild(svgEl('line', {x1:LABEL_W,y1:TOP_PAD-4,x2:LABEL_W,y2:totalH-10,stroke:'rgba(140,100,50,0.35)','stroke-width':'1.5'}));
+
+    // Stage column headers
+    STAGE_KEYS_S.forEach((sk,i) => {
+      const cx=colCx(i), color=STAGE_COLORS_S[sk];
+      const [ln1,ln2]=STAGE_LABELS_S[i];
+      svg.appendChild(svgEl('text', {x:cx,y:18,'text-anchor':'middle','font-size':'9.5','font-weight':'700',fill:color,'font-family':'Inter,system-ui,sans-serif'}, ln1));
+      if (ln2) svg.appendChild(svgEl('text', {x:cx,y:31,'text-anchor':'middle','font-size':'9','font-weight':'600',fill:color,'font-family':'Inter,system-ui,sans-serif'}, ln2));
+    });
+    // Top axis separator
+    svg.appendChild(svgEl('line', {x1:LABEL_W,y1:TOP_PAD-4,x2:W,y2:TOP_PAD-4,stroke:'rgba(140,100,50,0.28)','stroke-width':'1'}));
+
+    // "AUTONOMY" label in top-left corner
+    svg.appendChild(svgEl('text', {x:LABEL_W/2,y:TOP_PAD/2+4,'text-anchor':'middle','font-size':'8','font-weight':'700',fill:'rgba(140,100,50,0.50)','font-family':'Inter,system-ui,sans-serif','letter-spacing':'0.07em'}, 'AUTONOMY'));
+
+    const tooltip = document.getElementById('scatterTooltip');
+    function posTooltip(e) {
+      if (!tooltip) return;
+      tooltip.style.left=(e.clientX+14)+'px'; tooltip.style.top=(e.clientY-10)+'px';
+    }
+
+    // Draw bands (top = Fully Autonomous, bottom = Low)
+    let y = TOP_PAD;
+    bands.forEach((band, bi) => {
+      const bandY=y, bandH=band.h;
+
+      // Band background (alternating)
+      if (bi%2===0) svg.appendChild(svgEl('rect', {x:0,y:bandY,width:W,height:bandH,fill:'rgba(140,100,50,0.028)'}));
+
+      // Band separator
+      svg.appendChild(svgEl('line', {x1:0,y1:bandY,x2:W,y2:bandY,stroke:'rgba(140,100,50,0.22)','stroke-width':'1'}));
+
+      // Y-axis tick
+      svg.appendChild(svgEl('line', {x1:LABEL_W-7,y1:bandY,x2:LABEL_W,y2:bandY,stroke:'rgba(140,100,50,0.45)','stroke-width':'1.5'}));
+
+      // Band label (centered in left column)
+      const midY=bandY+bandH/2;
+      const [l1,l2]=band.lbls;
+      svg.appendChild(svgEl('text', {x:LABEL_W/2,y:midY+(l2?-5:3),'text-anchor':'middle','font-size':'9','font-weight':'800',fill:band.color,'font-family':'Inter,system-ui,sans-serif','letter-spacing':'0.05em'}, l1));
+      if (l2) svg.appendChild(svgEl('text', {x:LABEL_W/2,y:midY+7,'text-anchor':'middle','font-size':'9','font-weight':'800',fill:band.color,'font-family':'Inter,system-ui,sans-serif','letter-spacing':'0.05em'}, l2));
+      svg.appendChild(svgEl('text', {x:LABEL_W/2,y:midY+(l2?19:17),'text-anchor':'middle','font-size':'7','font-weight':'400',fill:band.color,'font-family':'Inter,system-ui,sans-serif',opacity:'0.60'}, `${band.items.length}`));
+
+      // Agent rows
+      band.rows.forEach((row, ri) => {
+        const rowY=bandY+BAND_PAD+ri*ROW_H;
+        const barY=rowY+(ROW_H-BAR_H)/2;
+        const midBarY=barY+BAR_H/2;
+
+        row.forEach(item => {
+          const { a, covIdxs, segs, minStage, maxStage, textCol } = item;
+          const fill   = CX_FILL[a.complexity]  || '#A09878';
+          const stroke = ADV_TEXT[a.advantage]  || '#8A7060';
+          const g = svgEl('g', {style:'cursor:pointer'});
+
+          // Bridge lines between non-adjacent segments
+          for (let si=1; si<segs.length; si++) {
+            g.appendChild(svgEl('line', {
+              x1:segR(segs[si-1][1]), y1:midBarY, x2:segL(segs[si][0]), y2:midBarY,
+              stroke, 'stroke-width':'1.5', opacity:'0.30', 'stroke-dasharray':'4,3',
+            }));
+          }
+
+          // Solid bars for each contiguous segment of stages
+          segs.forEach(([s,e]) => {
+            g.appendChild(svgEl('rect', {
+              x:segL(s), y:barY, width:segR(e)-segL(s), height:BAR_H, rx:BAR_H/2,
+              fill, stroke, 'stroke-width':'1.5', opacity:'0.92',
+            }));
+          });
+
+          // Name label centered across full bar span, clipped to it
+          const x0=segL(minStage), x1=segR(maxStage), spanW=x1-x0;
+          const clipId=`sc${Math.random().toString(36).slice(2,8)}`;
+          const defs=svgEl('defs'); const cp=svgEl('clipPath',{id:clipId});
+          cp.appendChild(svgEl('rect',{x:x0,y:barY,width:spanW,height:BAR_H}));
+          defs.appendChild(cp); svg.appendChild(defs);
+
+          const maxCh=Math.max(4,Math.floor(spanW/5.8));
+          const nm=a.name, label=nm.length>maxCh ? nm.slice(0,maxCh-1)+'…' : nm;
+          g.appendChild(svgEl('text', {
+            x:(x0+x1)/2, y:midBarY+3.5, 'text-anchor':'middle',
+            'font-size':'9', 'font-weight':'600', fill:textCol,
+            'font-family':'Inter,system-ui,sans-serif', 'clip-path':`url(#${clipId})`,
+          }, label));
+
+          // Hover
+          g.addEventListener('mouseenter', e => {
+            g.querySelectorAll('rect').forEach(r=>{ r.setAttribute('stroke-width','2.5'); r.setAttribute('opacity','1'); });
+            g.querySelectorAll('line').forEach(l=>l.setAttribute('opacity','0.65'));
+            if (tooltip) {
+              const auLbl=a.autonomy==='full'?'Fully Autonomous':scap(a.autonomy)+' autonomy';
+              const sNames=covIdxs.map(i=>STAGE_LABELS_S[i].filter(s=>s).join(' ')).join(' · ');
+              const ac=ADV_TEXT[a.advantage]||'#5A3A10';
+              tooltip.innerHTML=
+                `<div class="stt-name" style="color:${ac}">${sesc(a.name)}</div>`+
+                `<div class="stt-meta">${CX_LABELS[a.complexity]||''} · ${scap(a.advantage)} · ${auLbl}</div>`+
+                `<div class="stt-meta" style="margin-top:4px">${sNames}</div>`;
+              tooltip.classList.add('visible'); posTooltip(e);
+            }
+          });
+          g.addEventListener('mousemove', posTooltip);
+          g.addEventListener('mouseleave', () => {
+            g.querySelectorAll('rect').forEach(r=>{ r.setAttribute('stroke-width','1.5'); r.setAttribute('opacity','0.92'); });
+            g.querySelectorAll('line').forEach(l=>l.setAttribute('opacity','0.30'));
+            if (tooltip) tooltip.classList.remove('visible');
+          });
+          g.addEventListener('click', () => { window.location.href=`/agents/${a.id}`; });
+          svg.appendChild(g);
+        });
+      });
+
+      y += bandH;
+    });
+
+    // Bottom axis line
+    svg.appendChild(svgEl('line', {x1:LABEL_W,y1:totalH-10,x2:W,y2:totalH-10,stroke:'rgba(140,100,50,0.22)','stroke-width':'1'}));
+
+    return svg;
+  }
+
+  function scap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+  function sesc(s) { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
+
+  // ── View toggle ────────────────────────────────────────────────────────────
+  const matrixView    = document.getElementById('matrixView');
+  const advMatrixView = document.getElementById('advMatrixView');
+  const scatterView   = document.getElementById('scatterView');
+  const svgCont       = document.getElementById('scatterSvgContainer');
+  let rendered = false;
+
+  document.getElementById('viewToggleGroup').addEventListener('click', function (e) {
+    const btn = e.target.closest('.vt-btn');
+    if (!btn) return;
+    this.querySelectorAll('.vt-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const view = btn.dataset.view;
+    matrixView.style.display    = view === 'matrix'    ? '' : 'none';
+    advMatrixView.style.display = view === 'advmatrix' ? '' : 'none';
+    scatterView.style.display   = view === 'scatter'   ? '' : 'none';
+    if (view === 'scatter' && !rendered) {
+      svgCont.innerHTML = '';
+      svgCont.appendChild(renderScatter(SCATTER_AGENTS));
+      rendered = true;
+    }
+  });
+})();
+</script>
+{% endblock %}

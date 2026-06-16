@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}AI Agent Classifier{% endblock %}</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/panthera_icon.png') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+
+<!-- ── Main navbar ─────────────────────────────────────────────────────── -->
+<nav class="navbar navbar-expand-lg sticky-top app-navbar">
+  <div class="container-fluid px-4">
+    <a class="navbar-brand app-brand" href="{{ url_for('matrix') }}">
+      <img src="{{ url_for('static', filename='img/panthera_logo.png') }}" alt="Panthera Group" class="brand-logo" href="https://www.panthera.design/"/>
+      <span class="brand-name">3D AI Agents Classifier for the Investment Industry</span>
+    </a>
+    <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse"
+            data-bs-target="#navContent" aria-controls="navContent"
+            aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navContent">
+      <ul class="navbar-nav ms-auto gap-1">
+        <li class="nav-item">
+          <a class="nav-link app-nav-link
+            {% if request.endpoint == 'matrix' %}active{% endif %}"
+             href="{{ url_for('matrix') }}">Matrix</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link app-nav-link
+            {% if request.endpoint == 'pipeline' %}active{% endif %}"
+             href="{{ url_for('pipeline') }}">
+            Pipeline
+            {% if pending_count > 0 %}
+              <span class="badge app-badge-pending ms-1">{{ pending_count }}</span>
+            {% endif %}
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link app-nav-link
+            {% if request.endpoint == 'guide' %}active{% endif %}"
+             href="{{ url_for('guide') }}">Guide</a>
+        </li>
+      </ul>
+      <ul class="navbar-nav">
+        <li class="nav-item dropdown">
+          <a class="nav-link app-nav-link dropdown-toggle" href="#"
+             id="exportDropdown" role="button"
+             data-bs-toggle="dropdown" aria-expanded="false">
+            Exports
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end app-dropdown"
+              aria-labelledby="exportDropdown">
+            <li>
+              <a class="dropdown-item app-dropdown-item"
+                 href="{{ url_for('export_excel') }}">
+                <span class="me-2 opacity-75">⬇</span> Download Excel
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item app-dropdown-item"
+                 href="{{ url_for('export_word') }}">
+                <span class="me-2 opacity-75">⬇</span> Download Word
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item app-dropdown-item"
+                 href="{{ url_for('export_pdf') }}">
+                <span class="me-2 opacity-75">⬇</span> Download PDF
+              </a>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Flash messages ──────────────────────────────────────────────────── -->
+<div class="container-fluid px-4 pt-3" id="flash-zone">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        {% set alert_class = {
+          'success': 'alert-success',
+          'warning': 'alert-warning',
+          'danger':  'alert-danger',
+          'info':    'alert-info'
+        }.get(category, 'alert-info') %}
+        <div class="alert {{ alert_class }} alert-dismissible fade show auto-dismiss"
+             role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+</div>
+
+<!-- ── Page content ────────────────────────────────────────────────────── -->
+<main class="container-fluid px-4 pb-5">
+  {% block content %}{% endblock %}
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block title %}{{ agent.name }} — AI Agent Classifier{% endblock %}
+
+{% block content %}
+{%- set rd = agent.rationale_dict -%}
+
+<!-- ── Hero header ──────────────────────────────────────────────────────── -->
+<div class="detail-hero mb-4">
+  <nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0" style="font-size:12px">
+      <li class="breadcrumb-item"><a href="{{ url_for('matrix') }}" class="text-decoration-none" style="color:var(--accent)">Matrix</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('pipeline') }}" class="text-decoration-none" style="color:var(--accent)">Pipeline</a></li>
+      <li class="breadcrumb-item active text-muted">{{ agent.name }}</li>
+    </ol>
+  </nav>
+
+  <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap mt-2">
+    <div>
+      <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+        <h1 class="detail-hero-name mb-0">{{ agent.name }}</h1>
+        {% if agent.status == 'classified' %}
+          <span class="badge bg-success" style="font-size:11px;padding:4px 10px">✓ Classified</span>
+        {% elif agent.status == 'pending' %}
+          <span class="badge bg-warning text-dark" style="font-size:11px;padding:4px 10px">⏳ Pending</span>
+        {% elif agent.status == 'rejected' %}
+          <span class="badge bg-secondary" style="font-size:11px;padding:4px 10px">✗ Rejected</span>
+        {% endif %}
+        {% if agent.agent_type %}
+          <span class="detail-type-chip">{{ agent.agent_type|replace('-',' ')|title }}</span>
+        {% endif %}
+      </div>
+      <div class="d-flex align-items-center gap-3 flex-wrap">
+        {% if agent.url %}
+          <a href="{{ agent.url }}" target="_blank" rel="noopener" class="text-decoration-none detail-hero-url">
+            {{ agent.url }} ↗
+          </a>
+        {% endif %}
+        {% if agent.created_at %}
+          <span class="detail-hero-meta">Added {{ agent.created_at.strftime('%d %b %Y') }}</span>
+        {% endif %}
+        <span class="detail-hero-meta">{{ classified_count }} agents classified</span>
+      </div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap align-items-start mt-1">
+      {% if agent.status == 'pending' %}
+        <a href="{{ url_for('classify_agent', agent_id=agent.id) }}" class="btn btn-primary btn-sm">Classify →</a>
+      {% endif %}
+      <a href="{{ url_for('edit_agent', agent_id=agent.id) }}" class="btn btn-outline-secondary btn-sm">Edit</a>
+      <a href="{{ url_for('matrix') }}" class="btn btn-outline-secondary btn-sm">← Matrix</a>
+    </div>
+  </div>
+</div>
+
+<!-- ── Main grid ────────────────────────────────────────────────────────── -->
+<div class="row g-4 align-items-start">
+
+  <!-- ── Left col: Description + Features (mobile: shown second) ──────── -->
+  <div class="col-lg-7 order-2 order-lg-1">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body p-4">
+
+        <!-- Description -->
+        <div class="detail-section-title">Description</div>
+        {% if agent.description %}
+          <p class="detail-description mb-0">{{ agent.description }}</p>
+        {% else %}
+          <p class="text-muted mb-0 small">No description provided.</p>
+        {% endif %}
+
+        <!-- Key features -->
+        {% set feats = agent.features_list %}
+        {% if feats %}
+          <div class="detail-divider"></div>
+          <div class="detail-section-title">Key Features</div>
+          <ul class="detail-features-list mb-0">
+            {% for f in feats %}
+              {% if f.strip() %}<li>{{ f }}</li>{% endif %}
+            {% endfor %}
+          </ul>
+        {% endif %}
+
+        <!-- Analyst notes -->
+        {% if rd.get('general') %}
+          <div class="detail-divider"></div>
+          <div class="detail-section-title">Analyst Notes</div>
+          <p class="mb-0" style="font-size:13.5px;line-height:1.75;color:var(--text-secondary);font-style:italic">
+            {{ rd.general }}
+          </p>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Right col: Classification (mobile: shown first) ──────────────── -->
+  <div class="col-lg-5 order-1 order-lg-2">
+    <div class="card border-0 shadow-sm" style="position:sticky;top:16px">
+      <div class="card-body p-4">
+        <div class="detail-section-title">Classification</div>
+
+        <!-- Comparative Advantage -->
+        {% if agent.advantage %}
+          {%- set adv_color  = {'behavioral':'var(--beh)','analytical':'var(--ana)','informational':'var(--inf)'}-%}
+          {%- set adv_bg     = {'behavioral':'rgba(224,97,58,0.10)','analytical':'rgba(29,184,122,0.10)','informational':'rgba(239,159,39,0.10)'} -%}
+          {%- set adv_border = {'behavioral':'rgba(224,97,58,0.28)','analytical':'rgba(29,184,122,0.28)','informational':'rgba(239,159,39,0.28)'} -%}
+          <div class="detail-metric-block mb-3"
+               style="background:{{ adv_bg.get(agent.advantage,'var(--bg-elevated)') }};
+                      border-color:{{ adv_border.get(agent.advantage,'var(--border)') }}">
+            <div class="detail-metric-label">Comparative Advantage</div>
+            <div class="detail-metric-value" style="color:{{ adv_color.get(agent.advantage,'var(--text-primary)') }}">
+              {{ advantage_labels.get(agent.advantage, agent.advantage) }}
+            </div>
+            {% if rd.get('advantage') %}
+              <div class="detail-metric-rationale">{{ rd.advantage }}</div>
+            {% endif %}
+          </div>
+        {% endif %}
+
+        <!-- Complexity Tier -->
+        {% if agent.complexity %}
+          {%- set cx_bg     = {'black':'rgba(20,20,20,0.85)','dark-grey':'rgba(55,55,55,0.55)','light-grey':'rgba(176,176,176,0.12)','white':'rgba(230,230,230,0.08)'} -%}
+          {%- set cx_color  = {'black':'#D8D8D8','dark-grey':'#E0E0E0','light-grey':'#C8C8C8','white':'#B8B8B8'} -%}
+          {%- set cx_border = {'black':'rgba(80,80,80,0.55)','dark-grey':'rgba(110,110,110,0.40)','light-grey':'rgba(160,160,160,0.30)','white':'rgba(200,200,200,0.22)'} -%}
+          <div class="detail-metric-block mb-3"
+               style="background:{{ cx_bg.get(agent.complexity,'var(--bg-elevated)') }};
+                      border-color:{{ cx_border.get(agent.complexity,'var(--border)') }}">
+            <div class="detail-metric-label">Complexity Tier</div>
+            <div class="detail-metric-value" style="color:{{ cx_color.get(agent.complexity,'var(--text-primary)') }}">
+              {{ complexity_labels.get(agent.complexity, agent.complexity) }}
+            </div>
+            {% if rd.get('complexity') %}
+              <div class="detail-metric-rationale">{{ rd.complexity }}</div>
+            {% endif %}
+          </div>
+        {% endif %}
+
+        <!-- Autonomy + Agent Type -->
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <div class="detail-meta-block h-100">
+              <div class="detail-metric-label">Autonomy</div>
+              <div class="detail-meta-value">
+                {%- if agent.autonomy == 'full' %}Fully Autonomous
+                {%- elif agent.autonomy %}{{ agent.autonomy|title }}
+                {%- else %}—{% endif -%}
+              </div>
+              {% if rd.get('autonomy') %}
+                <div class="detail-metric-rationale" style="font-size:11px">{{ rd.autonomy }}</div>
+              {% endif %}
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="detail-meta-block h-100">
+              <div class="detail-metric-label">Agent Type</div>
+              <div class="detail-meta-value">{{ agent.agent_type|replace('-',' ')|title if agent.agent_type else '—' }}</div>
+              {% if rd.get('agent_type') %}
+                <div class="detail-metric-rationale" style="font-size:11px">{{ rd.agent_type }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Process Stages -->
+        {% if agent.stages_list %}
+          {%- set stage_color = {
+            'idea-gen':'#4A7A3A','idea-assess':'#C8A828','decision':'#6478C0',
+            'execution':'#CC7830','monitoring':'#9868A8','compliance':'#3A9888','stakeholder':'#C04848'
+          } -%}
+          <div class="detail-stages-block">
+            <div class="detail-metric-label mb-2">Process Stages</div>
+            <div class="d-flex flex-wrap gap-2">
+              {% for sk in agent.stages_list %}
+                <span class="detail-stage-pill"
+                      style="border-color:{{ stage_color.get(sk,'var(--border)') }};
+                             color:{{ stage_color.get(sk,'var(--text-secondary)') }};
+                             background:{{ stage_color.get(sk,'rgba(0,0,0,0)') }}1A">
+                  {{ stage_map.get(sk, sk) }}
+                </span>
+              {% endfor %}
+            </div>
+            {% if rd.get('stages') %}
+              <div class="detail-metric-rationale mt-2">{{ rd.stages }}</div>
+            {% endif %}
+          </div>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

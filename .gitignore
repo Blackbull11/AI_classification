@@ -1,0 +1,19 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.env
+.venv
+venv/
+env/
+
+# Log / debug output files
+ai_agent_classifier/*.txt
+
+# Keep agents.db (seeded data ships with the app)
+# To ignore writes: uncomment the next line and use a Railway volume instead
+# ai_agent_classifier/instance/agents.db
