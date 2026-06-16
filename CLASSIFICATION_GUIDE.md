@@ -1,6 +1,38 @@
 # AI Agent Classification Guide
 
-This guide explains the database schema, what each classification field means, how to decide the correct value for each dimension, and how to use the automated classifier.
+## Academic Foundation
+
+This classification system implements the multi-dimensional framework proposed in:
+
+> **Schuller, B., Wierckx, T., Kuhn, M., & Zilic, I.** (2025). *A Multi-Dimensional Classification System For AI Agents In The Investment Industry*. SSRN Working Paper. https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6290078
+
+The paper introduces a structured taxonomy for mapping AI systems against the investment process, arguing that the proliferation of AI agents in asset management requires a principled framework — one that captures not only *what* an agent does but *how* it behaves epistemically, where it intervenes in the investment workflow, and what class of competitive advantage it confers.
+
+The framework rests on four orthogonal dimensions:
+
+1. **Complexity** — epistemic classification via Swan Theory (how well-defined is the underlying problem?)
+2. **Comparative Advantage** — what edge does the agent generate? (informational, analytical, or behavioral)
+3. **Autonomy** — what degree of human oversight remains? (low → medium → high → fully autonomous)
+4. **Investment Process Stage** — which phase of the investment lifecycle does the agent support?
+
+A fifth dimension — **Agent Type** (commercial / in-house / academic) — is added for provenance tracking.
+
+---
+
+## Swan Theory — Theoretical Background
+
+The complexity dimension adapts Nassim Nicholas Taleb's *Black Swan* theory (Taleb, 2007) into a four-tier operational taxonomy calibrated to the specific epistemic challenges of investment decision-making.
+
+Taleb's original insight — that financial markets are dominated by rare, high-impact events that lie outside the predictive reach of classical probability models — is generalized here into a spectrum of *outcome knowability*. The key question is not whether uncertainty exists (it always does) but whether the **probability distribution of outcomes** can be meaningfully characterized.
+
+| Tier | Label | Epistemic Status | Taleb Mapping |
+|---|---|---|---|
+| `white` | White Swan | Distribution fully known and stable | Risk (classical probability) |
+| `light-grey` | Light-Grey Swan | Distribution theoretically exists but must be discovered | Mild uncertainty |
+| `dark-grey` | Dark-Grey Swan | Causal structure understood but distribution non-parametric | Deep uncertainty |
+| `black` | Black Swan | Distribution unknowable; structural singularity | True Black Swan domain |
+
+This taxonomy operationalizes the distinction between **risk** (quantifiable), **uncertainty** (unquantifiable but bounded), and **radical uncertainty** (unknowable in principle) — a distinction traceable through Knight (1921), Keynes (1921), and Taleb (2007) — for the practical purpose of AI system classification.
 
 ---
 
@@ -17,7 +49,7 @@ The database is a single SQLite table (`agents`), managed by SQLAlchemy. The fil
 | `rationale` | TEXT | Yes | Framework justification for the assigned classification |
 | `key_features` | TEXT (JSON) | Yes | JSON array of bullet-point features |
 | `advantage` | TEXT | Yes | `"behavioral"` \| `"analytical"` \| `"informational"` |
-| `autonomy` | TEXT | Yes | `"low"` \| `"medium"` \| `"high"` |
+| `autonomy` | TEXT | Yes | `"low"` \| `"medium"` \| `"high"` \| `"full"` |
 | `agent_type` | TEXT | Yes | `"commercial"` \| `"in-house"` \| `"academic"` |
 | `complexity` | TEXT | Yes | `"white"` \| `"light-grey"` \| `"dark-grey"` \| `"black"` |
 | `stages` | TEXT (JSON) | Yes | JSON array of stage keys (see below) |
@@ -58,9 +90,15 @@ The Swan Theory describes how well-defined the problem domain is, specifically t
 | Value | Label | When to use |
 |---|---|---|
 | `white` | White Swan | The outcome distribution is well-characterized and stable. Data is abundant and representative. The problem is a pure optimization over a known distribution. |
-| `light-grey` | Light Grey Swan | A distribution theoretically exists but is non-stationary, fat-tailed, or hard to fit. The signal must be searched for with ML or heuristics, not read off directly. |
-| `dark-grey` | Dark Grey Swan | A causal identification problem: we know the drivers, but the causal chain cannot be fully modeled. Requires scenario analysis and expert judgment. |
+| `light-grey` | Light-Grey Swan | A distribution theoretically exists but is non-stationary, fat-tailed, or hard to fit. The signal must be searched for with ML or heuristics, not read off directly. |
+| `dark-grey` | Dark-Grey Swan | A causal identification problem: we know the drivers, but the causal chain cannot be fully modeled. Requires scenario analysis and expert judgment. |
 | `black` | Black Swan | The distribution of outcomes is fundamentally unknowable. Novel, unprecedented, structurally uncertain situations. |
+
+**Theoretical grounding:**
+
+The `white` / `light-grey` boundary maps to Knight's (1921) distinction between *risk* and *uncertainty*: white-swan problems are in the risk domain (quantifiable); light-grey problems involve uncertainty that can be reduced with data and ML but not eliminated.
+
+The `dark-grey` / `black` boundary maps to the transition between *deep uncertainty* (structural but non-parametric causal systems) and *radical uncertainty* (Taleb's Black Swan domain, where the reference class itself does not exist).
 
 **Decision heuristic:**
 
@@ -77,9 +115,11 @@ The Swan Theory describes how well-defined the problem domain is, specifically t
 
 ---
 
-### 2. Advantage
+### 2. Comparative Advantage
 
-What **edge** does this agent provide to the investment firm?
+*Schuller et al. (2025) §3.2* — What **edge** does this agent provide to the investment firm?
+
+The framework adapts the information-advantage taxonomy common in market microstructure theory: agents differ not just in capability but in the *type* of asymmetry they exploit.
 
 | Value | When to use |
 |---|---|
@@ -98,13 +138,16 @@ What **edge** does this agent provide to the investment firm?
 
 ### 3. Autonomy
 
-How much human oversight is required for the agent to act?
+*Schuller et al. (2025) §3.3* — How much human oversight is required for the agent to act?
 
 | Value | Meaning |
 |---|---|
 | `low` | **Human-in-the-loop.** The agent surfaces recommendations, insights, or alerts. A human reviews and makes every decision. |
 | `medium` | **Semi-autonomous.** The agent acts within defined parameters but humans monitor and can intervene. May require periodic human review. |
-| `high` | **Fully autonomous.** The agent executes decisions within pre-configured constraints without per-action human approval. |
+| `high` | **Fully autonomous within constraints.** The agent executes decisions within pre-configured parameters without per-action human approval. |
+| `full` | **Fully Autonomous.** No human veto on individual decisions. The AI owns the complete decision loop including live capital deployment. |
+
+The `full` tier is reserved for systems where there is **no human override mechanism** on individual decisions — systems that both make and execute investment decisions autonomously (e.g. AIEQ/EquBot, Numerai Meta Model). "High" autonomy applies to systems that execute within human-set parameters; "full" applies when the parameters themselves are AI-determined.
 
 **Note:** "autonomous" here refers to the investment action, not the underlying software architecture. A fully agentic AI that still requires a human to approve every trade is `low`.
 
@@ -124,7 +167,9 @@ What is the origin of the agent?
 
 ### 5. Stages
 
-Which phases of the investment process does this agent support? **Select all that apply.**
+*Schuller et al. (2025) §3.4* — Which phases of the investment process does this agent support? **Select all that apply.**
+
+The seven-stage pipeline maps the full lifecycle of an investment decision, from idea origination through to investor reporting.
 
 | Key | Label | Description |
 |---|---|---|
@@ -170,7 +215,16 @@ A good rationale:
 3. Acknowledges any borderline calls
 
 **Example:**
-> "Classified Light Grey Swan because equity return distributions are theoretically estimable but non-stationary and fat-tailed in practice — the true distribution must be searched with ML, not read off directly. Analytical advantage: the crowdsourcing mechanism aggregates thousands of diverse models, which is itself evidence that no single model reliably finds the distribution. Autonomy is High because the Meta Model trades its own book autonomously within pre-set parameters."
+> "Classified Light Grey Swan because equity return distributions are theoretically estimable but non-stationary and fat-tailed in practice — the true distribution must be searched with ML, not read off directly. Analytical advantage: the crowdsourcing mechanism aggregates thousands of diverse models, which is itself evidence that no single model reliably finds the distribution. Autonomy is Full because the Meta Model trades its own book with no human veto on individual position decisions."
+
+---
+
+## References
+
+- Taleb, N. N. (2007). *The Black Swan: The Impact of the Highly Improbable*. Random House.
+- Knight, F. H. (1921). *Risk, Uncertainty and Profit*. Hart, Schaffner & Marx; Houghton Mifflin.
+- Keynes, J. M. (1921). *A Treatise on Probability*. Macmillan.
+- Schuller, B., Wierckx, T., Kuhn, M., & Zilic, I. (2025). *A Multi-Dimensional Classification System For AI Agents In The Investment Industry*. SSRN Working Paper #6290078. https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6290078
 
 ---
 

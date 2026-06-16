@@ -202,4 +202,16 @@
 
 ---
 
+### 2026-06-16 — README and CLASSIFICATION_GUIDE academic update
+
+**Summary**: Created `README.md` and upgraded `CLASSIFICATION_GUIDE.md` with full academic framing referencing the founding paper (Schuller, Wierckx, Kuhn & Zilic, 2025, SSRN #6290078). README lists all platform features, installation, and agent catalogue; CLASSIFICATION_GUIDE now includes Swan Theory intellectual lineage (Taleb 2007, Knight 1921, Keynes 1921) and a formal references section.
+
+**Files changed**:
+- `README.md` — created: academic foundation, Swan Theory table, screenshot placeholder, full feature list, catalogue, tech stack, installation, file structure, references
+- `CLASSIFICATION_GUIDE.md` — added: Academic Foundation section, Swan Theory theoretical background with Taleb/Knight/Keynes lineage, epistemic status column in Swan tier table, `full` autonomy tier docs, formal References section
+- `docs/screenshots/` — created directory for matrix screenshot (placeholder; screenshot to be added manually)
+
+**Open items**:
+- Add an actual screenshot of the matrix to `docs/screenshots/matrix.png`
+
 <!-- APPEND NEW SESSIONS ABOVE THIS LINE -->
