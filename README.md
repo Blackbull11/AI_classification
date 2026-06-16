@@ -2,6 +2,7 @@
 
 A web application for cataloguing, classifying, and exporting AI agents used in investment management, built around a peer-reviewed multi-dimensional classification framework.
 
+[Explore the app](https://panthera-ai-classification-matrix.up.railway.app)
 ---
 
 ## Academic Foundation
