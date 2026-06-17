@@ -426,22 +426,39 @@
 
 <!-- ── Hero ──────────────────────────────────────────────────────────────── -->
 <div class="fw-hero">
-  <div class="fw-hero-label">Research Framework</div>
-  <h1 class="fw-hero-title">
-    A <em>3-Dimensional</em> Classification System<br>for AI Agents in the Investment Industry
-  </h1>
-  <p class="fw-hero-body">
-    Financial markets are complex adaptive systems — and AI tools are proliferating faster than the vocabulary to describe them.
-    This framework gives investment managers, developers, and regulators a shared language to evaluate any AI agent
-    across three structural dimensions: <strong>what environment it operates in</strong>,
-    <strong>where it sits in the investment process</strong>, and <strong>what competitive edge it enables</strong>.
-  </p>
-  <p class="fw-cite">
-    Based on
-    <a href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6290078" target="_blank" rel="noopener">
-      Schuller, Wierckx, Kuhn &amp; Zilic — <em>A Multi-Dimensional Classification System For AI Agents In The Investment Industry</em> (2025)
-    </a>
-  </p>
+  <div class="row align-items-center g-4">
+    <div class="col-lg-7">
+      <div class="fw-hero-label">Research Framework</div>
+      <h1 class="fw-hero-title">
+        A <em>3-Dimensional</em> Classification System<br>for AI Agents in the Investment Industry
+      </h1>
+      <p class="fw-hero-body">
+        Financial markets are complex adaptive systems — and AI tools are proliferating faster than the vocabulary to describe them.
+        This framework gives investment managers, developers, and regulators a shared language to evaluate any AI agent
+        across three structural dimensions: <strong>what environment it operates in</strong>,
+        <strong>where it sits in the investment process</strong>, and <strong>what competitive edge it enables</strong>.
+      </p>
+      <p class="fw-cite">
+        Based on
+        <a href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6290078" target="_blank" rel="noopener">
+          Schuller, Wierckx, Kuhn &amp; Zilic — <em>A Multi-Dimensional Classification System For AI Agents In The Investment Industry</em> (2025)
+        </a>
+      </p>
+    </div>
+    <div class="col-lg-5">
+      <div class="fw-cta-wrap" style="margin-top:0;">
+        <div class="fw-cta-label">Ready to explore?</div>
+        <div class="fw-cta-heading" style="font-size:16px;">See every AI agent mapped in 3D</div>
+        <div class="fw-cta-sub" style="font-size:12px;">Complexity × process stage × competitive edge.</div>
+        <a href="{{ url_for('matrix') }}" class="fw-cta-btn">
+          Explore the Matrix
+          <span class="fw-cta-arrow">→</span>
+        </a>
+        <br>
+        <a href="{{ url_for('guide') }}" class="fw-cta-secondary">Or find agents by criteria →</a>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ── Why this framework ─────────────────────────────────────────────────── -->
@@ -902,9 +919,16 @@
     </div>
   </div>
 
-  <div style="margin-top:24px;text-align:center;">
-    <a href="{{ url_for('matrix') }}" class="btn btn-primary me-2">View the Classification Matrix →</a>
-    <a href="{{ url_for('guide') }}" class="btn btn-outline-secondary">Find agents by criteria →</a>
+  <div class="fw-cta-wrap">
+    <div class="fw-cta-label">Ready to explore?</div>
+    <div class="fw-cta-heading">See every AI agent mapped in 3D</div>
+    <div class="fw-cta-sub">Browse the full classification matrix — complexity × process stage × competitive edge.</div>
+    <a href="{{ url_for('matrix') }}" class="fw-cta-btn">
+      Explore the Matrix
+      <span class="fw-cta-arrow">→</span>
+    </a>
+    <br>
+    <a href="{{ url_for('guide') }}" class="fw-cta-secondary">Or find agents by criteria →</a>
   </div>
 </div>
 

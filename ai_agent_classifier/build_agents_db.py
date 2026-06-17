@@ -7,10 +7,6 @@ def generate_database():
     db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance', 'agents.db')
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
 
-    # Remove existing DB so we start clean
-    if os.path.exists(db_path):
-        os.remove(db_path)
-
     conn   = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
@@ -51,6 +47,12 @@ def generate_database():
         "QuantAgent":                                             "institutional-quant-alpha",
         "JPMorgan IndexGPT":                                      "institutional-quant-alpha",
         "BlackRock AlphaAgents":                                  "institutional-quant-alpha",
+        "BlackRock Aladdin":                                      "institutional-quant-alpha",
+        "BlackRock eFront":                                       "research-due-diligence",
+        "FinGPT":                                                 "autonomous-trading-engines",
+        "FinMem":                                                 "autonomous-trading-engines",
+        "TradingAgents":                                          "autonomous-trading-engines",
+        "FinRL-Trading":                                          "autonomous-trading-engines",
         "Pluto.fi (Robinhood)":                                   "institutional-quant-alpha",
         "Pluto (Robinhood)":                                      "institutional-quant-alpha",
         "Axyon AI":                                               "institutional-quant-alpha",
@@ -83,7 +85,7 @@ def generate_database():
         "RavenPack News Analytics / Bigdata.com":                 "market-intelligence-aggregators",
         "Dataminr":                                               "market-intelligence-aggregators",
         "AlphaSense":                                             "market-intelligence-aggregators",
-        "Bloomberg AI (BloombergGPT / ASKB)":                     "market-intelligence-aggregators",
+        "Bloomberg ASKB":                                          "market-intelligence-aggregators",
         "Needl":                                                  "market-intelligence-aggregators",
         "Terminal X":                                             "market-intelligence-aggregators",
         "Theia Insights":                                         "market-intelligence-aggregators",
@@ -377,11 +379,10 @@ def generate_database():
             "status": "classified"
         },
         {
-            "name": "Bloomberg AI (BloombergGPT / ASKB)",
+            "name": "Bloomberg ASKB",
             "url": "https://www.bloomberg.com/professional/ai/",
-            "description": "A suite of AI capabilities embedded in the Bloomberg Terminal, anchored by BloombergGPT (50B parameter LLM trained on 700B tokens of Bloomberg's proprietary financial text) and ASKB, an agentic interface coordinating search agents over Bloomberg's document and data universe with transparent BQL code exposure. The differentiator is the depth of proprietary training data, not the LLM architecture.",
+            "description": "An agentic interface embedded in the Bloomberg Terminal that coordinates search agents over Bloomberg's document and data universe with transparent BQL code exposure. The differentiator is the depth of proprietary data access and full analytical transparency through exposed BQL queries.",
             "key_features": [
-            "BloombergGPT trained on 700B tokens of Bloomberg proprietary financial text — the deepest domain-specific training corpus in this list",
             "ASKB exposes underlying BQL (Bloomberg Query Language) code for all generated answers — unique analytical transparency among terminal-integrated AIs"
             ],
             "rationale": {
@@ -1883,6 +1884,132 @@ def generate_database():
             "agent_type": "commercial",
             "complexity": "white",
             "stages": ["idea-assess", "monitoring"]
+        },
+        {
+            "name": "BlackRock Aladdin",
+            "url": "https://www.blackrock.com/aladdin/solutions/aladdin-copilot",
+            "description": "BlackRock's Aladdin platform with integrated AI Copilot, enabling portfolio managers to query exposures, run scenario analyses, and generate risk summaries in natural language over Aladdin's structured system of record for public market assets (equities, fixed income, derivatives, multi-asset). The benchmark low-autonomy AI copilot for institutional public market risk and portfolio analytics — all outputs require human sign-off with no trading authority.",
+            "key_features": [
+            "Natural language interface over Aladdin's scoped portfolio and risk data — no open-web access or hallucination of data outside the system of record",
+            "Formal human sign-off requirement on all outputs: no allocation or trading authority, making it the industry reference for a low-autonomy, high-control investment AI"
+            ],
+            "rationale": {
+            "advantage": "Analytical. Synthesizes Aladdin's structured portfolio and risk data to answer complex queries across multi-asset exposures and scenario analyses — the edge is reasoning quality over a rich institutional data environment.",
+            "complexity": "White Swan. Operates over structured, deterministic portfolio and risk data within Aladdin's system of record — not searching for signals in noisy market data.",
+            "autonomy": "Low. No trading or allocation authority; all outputs are decision-support requiring human review and formal sign-off.",
+            "agent_type": "Commercial. BlackRock sells Aladdin platform access to asset managers globally.",
+            "stages": "Idea Assessment (portfolio exposure analysis), Monitoring (risk and performance monitoring), Stakeholder Management (portfolio reporting and scenario communication)."
+            },
+            "advantage": "analytical",
+            "autonomy": "low",
+            "agent_type": "commercial",
+            "complexity": "white",
+            "stages": ["idea-assess", "monitoring", "stakeholder"]
+        },
+        {
+            "name": "BlackRock eFront",
+            "url": "https://www.blackrock.com/aladdin/solutions/efront",
+            "description": "BlackRock's eFront platform with integrated AI Copilot, purpose-built for private market investment management (PE, real estate, infrastructure, private debt) — enabling natural language queries over fund data, portfolio monitoring, cash flow analytics, and reporting for alternative asset managers. Distinct from Aladdin in covering illiquid private asset data structures (capital calls, distributions, NAV schedules) rather than public market risk.",
+            "key_features": [
+            "Private market-specific data model (PE, RE, infra, private debt) covering capital call schedules, distribution waterfalls, and NAV calculations — data structures absent from public market platforms",
+            "AI Copilot for private market due diligence workflows: queries across fund documents, LP reports, and portfolio company data within eFront's governed environment"
+            ],
+            "rationale": {
+            "advantage": "Analytical. Synthesizes heterogeneous private market data (fund documents, NAV schedules, cash flows) into structured analytics — the edge is reasoning quality over complex illiquid asset data.",
+            "complexity": "White Swan. Private market portfolio analytics operate over structured, deterministic fund accounting and LP data — well-defined data environment even if asset values are uncertain.",
+            "autonomy": "Low. Generates private market analytics and reports for human investment teams; no autonomous allocation or commitment authority.",
+            "agent_type": "Commercial. Part of BlackRock's Aladdin ecosystem, sold to PE managers, real asset managers, and institutional allocators.",
+            "stages": "Idea Assessment (private market due diligence and opportunity evaluation), Monitoring (portfolio company and fund performance tracking), Compliance (LP reporting and regulatory disclosure)."
+            },
+            "advantage": "analytical",
+            "autonomy": "low",
+            "agent_type": "commercial",
+            "complexity": "white",
+            "stages": ["idea-assess", "monitoring", "compliance"]
+        },
+        {
+            "name": "FinGPT",
+            "url": "https://github.com/AI4Finance-Foundation/FinGPT",
+            "description": "Open-source financial LLM framework from the AI4Finance Foundation that fine-tunes large language models on financial news, filings, and social media using RLHF — enabling financial sentiment analysis, market report generation, and financial question-answering at a fraction of the cost of closed models like BloombergGPT. Designed to democratize access to finance-domain LLMs for researchers and practitioners without proprietary data infrastructure.",
+            "key_features": [
+            "Low-cost RLHF fine-tuning on financial data: researchers can adapt LLMs to finance tasks with minimal compute — the most accessible route to a domain-specific financial LLM",
+            "Open-source and modifiable: bridges academic finance research and practitioner deployment without commercial API dependencies or proprietary training data requirements"
+            ],
+            "rationale": {
+            "advantage": "Analytical. LLM fine-tuned on financial text to improve comprehension of financial sentiment, market narratives, and domain-specific language — the edge is analytical quality of financial language understanding.",
+            "complexity": "Light-Grey Swan. Financial sentiment and market signal extraction from noisy, heterogeneous text sources requires ML heuristics — signal probability distributions are theoretically known but require search.",
+            "autonomy": "Low. Generates financial text analysis and signals for human researchers and practitioners; not a standalone autonomous trading system.",
+            "agent_type": "Academic / open-source. From the AI4Finance Foundation; freely available on GitHub.",
+            "stages": "Idea Generation (sentiment-driven signal generation), Idea Assessment (financial text analysis and comprehension)."
+            },
+            "advantage": "analytical",
+            "autonomy": "low",
+            "agent_type": "academic",
+            "complexity": "light-grey",
+            "stages": ["idea-gen", "idea-assess"]
+        },
+        {
+            "name": "FinMem",
+            "url": "https://github.com/AI4Finance-Foundation/FinMem-LLM-StockTrading",
+            "description": "Academic LLM trading agent from the AI4Finance Foundation that incorporates a layered memory architecture (working memory, short-term memory, long-term memory) to enable the agent to accumulate, prioritize, and retrieve financial experience across trading sessions — significantly outperforming memory-less LLM trading agents in backtesting on US equities.",
+            "key_features": [
+            "Layered memory architecture (working / short-term / long-term): the agent learns from prior trading outcomes and accumulates financial 'experience' — distinguishing it from stateless LLM trading agents",
+            "Memory priority scoring: recent and high-impact financial events are weighted more heavily in agent decisions — mimicking how experienced traders internalize market lessons"
+            ],
+            "rationale": {
+            "advantage": "Analytical. Layered memory enables progressive improvement in trading signal extraction — the edge is accumulated analytical experience improving decision quality over time.",
+            "complexity": "Light-Grey Swan. Stock trading signal generation in non-stationary equity markets — known uncertainty structures requiring ML heuristics and adaptive learning.",
+            "autonomy": "High. Autonomously generates signals and executes trading decisions in backtesting environments from raw market data.",
+            "agent_type": "Academic. Research prototype validated in backtesting; not deployed with live capital.",
+            "stages": "Idea Assessment (market signal analysis with accumulated memory context), Decision (trading decision generation), Execution (autonomous trade execution in backtesting)."
+            },
+            "advantage": "analytical",
+            "autonomy": "high",
+            "agent_type": "academic",
+            "complexity": "light-grey",
+            "stages": ["idea-assess", "decision", "execution"]
+        },
+        {
+            "name": "TradingAgents",
+            "url": "https://arxiv.org/abs/2412.20138",
+            "description": "Multi-agent LLM trading framework where specialized role-based agents (bull analyst, bear analyst, researcher, risk manager) engage in structured debate coordinated by a trading manager agent to reach consensus trading decisions — validated against historical data with improved risk-adjusted returns over single-agent and baseline models.",
+            "key_features": [
+            "Bull/bear debate mechanism forces explicit articulation of opposing investment theses — reduces single-agent groupthink and surfaces asymmetric risk in trading decisions",
+            "Integrated risk management agent participates in the debate loop: risk constraints are embedded in the decision process, not applied as an afterthought"
+            ],
+            "rationale": {
+            "advantage": "Analytical. Structured multi-role debate architecture for generating consensus trading decisions — the edge is wider analytical perspective coverage through agent specialization and adversarial deliberation.",
+            "complexity": "Light-Grey Swan. Trading signal generation in non-stationary markets — non-stationary uncertainty structures requiring ML-based heuristic search across market data.",
+            "autonomy": "High. Autonomous from signal generation through trade execution in backtesting environments; no human involvement in each deliberation cycle.",
+            "agent_type": "Academic. Research prototype validated in backtesting; not deployed with live capital.",
+            "stages": "Idea Assessment (multi-agent analytical deliberation), Decision (consensus investment decision via debate), Execution (autonomous trade execution in backtesting)."
+            },
+            "advantage": "analytical",
+            "autonomy": "high",
+            "agent_type": "academic",
+            "complexity": "light-grey",
+            "stages": ["idea-assess", "decision", "execution"]
+        },
+        {
+            "name": "FinRL-Trading",
+            "url": "https://github.com/AI4Finance-Foundation/FinRL",
+            "description": "The first open-source deep reinforcement learning framework for quantitative finance from the AI4Finance Foundation, training RL agents (DQN, PPO, SAC, A2C) to trade autonomously across equities, crypto, and futures — providing researchers and practitioners with a standardized benchmark environment for autonomous trading strategy development.",
+            "key_features": [
+            "First open-source DRL framework for finance: standardized benchmark enabling reproducible autonomous trading research without proprietary infrastructure",
+            "Supports multiple asset classes (equities, crypto, futures) and multiple RL algorithms — the broadest DRL experimentation surface of any open-source trading framework in this list"
+            ],
+            "rationale": {
+            "advantage": "Analytical. Deep RL learns optimal trading policies from historical market data — the edge is superior computational discovery of trading patterns via reward-maximizing reinforcement learning.",
+            "complexity": "Light-Grey Swan. Autonomous trading policy discovery in non-stationary financial markets — optimal policies must be searched across uncertain, time-varying environments using DRL heuristics.",
+            "autonomy": "High. RL agents autonomously generate and execute trading signals end-to-end in backtesting environments with no human in each decision loop.",
+            "agent_type": "Academic / open-source. From the AI4Finance Foundation; widely used for DRL trading research.",
+            "stages": "Idea Generation (signal discovery through RL exploration), Idea Assessment (strategy backtesting and policy evaluation), Decision (policy-driven trading decisions), Execution (autonomous trade execution in backtesting)."
+            },
+            "advantage": "analytical",
+            "autonomy": "high",
+            "agent_type": "academic",
+            "complexity": "light-grey",
+            "stages": ["idea-gen", "idea-assess", "decision", "execution"]
         }
 
     ]
@@ -1890,6 +2017,9 @@ def generate_database():
     timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
 
     for agent in agents_data_new:
+        cursor.execute("SELECT id FROM agents WHERE name = ?", (agent["name"],))
+        if cursor.fetchone():
+            continue
         cat_id = AGENT_CATEGORY_SEED.get(agent["name"])
         cursor.execute('''
             INSERT INTO agents (

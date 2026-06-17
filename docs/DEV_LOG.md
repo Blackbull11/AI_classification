@@ -52,6 +52,60 @@
 
 ---
 
+### 2026-06-17 — Flask-Admin panel at /admin
+
+**Summary**: Integrated Flask-Admin 2.2.0 to provide a full database CRUD interface at `/admin`. The `AgentModelView` gives a searchable, filterable list of all agents plus an edit form with proper dropdowns for all enum fields (status, advantage, complexity, autonomy, agent_type, category_id) and TextArea fields with JSON validation for the three JSON columns (stages, key_features, rationale).
+
+**Files changed**:
+- `requirements.txt` — added `flask-admin`
+- `ai_agent_classifier/app.py` — added imports (`flask_admin.Admin`, `flask_admin.contrib.sqla.ModelView`, `wtforms.TextAreaField`); added `AgentModelView` class with column config, form_choices, form_overrides, JSON validation in `on_model_change`; registered `Admin` instance at `/admin` and added the view at module level
+
+**Design decisions**:
+- `form_choices` covers all discrete fields so users get dropdowns, not raw text inputs
+- JSON fields (stages, key_features, rationale) kept as TextArea with placeholder hints showing expected format; `on_model_change` validates JSON before saving to prevent corrupt data
+- Admin registered at module level (not inside `if __name__ == "__main__"`) so it works under gunicorn too
+- `template_mode` omitted — Flask-Admin 2.x removed that parameter
+
+**Open items**:
+- Admin panel has no authentication — only safe for local/internal use; add `is_accessible()` override if exposed on a network
+
+---
+
+### 2026-06-17 — Autonomy Scatter: category grouping boxes
+
+**Summary**: Added category group boxes to the Autonomy Scatter view. Within each autonomy band, bars are now sorted and packed by their category label (e.g. "Trading Engine", "Market Intelligence"), then visually enclosed in a semi-transparent colored rounded rect with a small tag label above. Agents with no category_id are grouped together without a colored box. Also added `category_id` to the matrix route's `agents_json` payload and passed `CATEGORIES` to the matrix template.
+
+**Files changed**:
+- `ai_agent_classifier/app.py` — added `category_id` field to matrix `agents_json`; added `categories=CATEGORIES` to `render_template()` call
+- `ai_agent_classifier/templates/matrix.html` — added `SCATTER_CATEGORIES` JS lookup; slot enrichment computes `topCatId`; band packing now groups by category then packs rows per group; draw loop draws colored category box + label tag before each group's bars; layout constants updated (`CAT_LABEL_H`, `CAT_BOX_PAD`, `CAT_GAP`)
+
+**Design decisions**:
+- Category box fill: category hex color at 9% opacity; border at 28% opacity; rx=5
+- Label tag: small pill above the box top-left, filled at 18% opacity; text in full category color, uppercase, 8.5px
+- Agents with no category grouped into a single un-colored group at the end of each band
+- Category order within band = first-seen order (matches agent insertion order, roughly by autonomy level)
+
+**Open items**: none from this session
+
+---
+
+### 2026-06-17 — Framework as landing page + animated CTA
+
+**Summary**: Made the Framework page the app's landing page and added an animated "Explore the Matrix" CTA button at the bottom.
+
+**Files changed**:
+- `app.py` — matrix route changed from `"/"` to `"/matrix"`; framework route now serves both `"/"` and `"/framework"` via two decorators
+- `templates/framework.html` — added `@keyframes` animations (`fw-glow-pulse`, `fw-arrow-bounce`, `fw-arrow-appear`) and CTA component classes (`.fw-cta-wrap`, `.fw-cta-btn`, `.fw-cta-arrow`, `.fw-cta-secondary`) to the inline `<style>` block; replaced the plain bottom button row with a `.fw-cta-wrap` panel featuring a pulsing glow button and bouncing arrow
+
+**Design decisions**:
+- `url_for('matrix')` still resolves to `/matrix` — no template changes needed elsewhere
+- `pending_count` already provided by `inject_globals` context processor, so `/` on the framework route has no missing variables
+- Animations are page-scoped (inline style block) to keep `style.css` clean
+
+**Open items**: none from this session
+
+---
+
 ### 2026-06-17 — Framework page content alignment with academic paper
 
 **Summary**: Applied four targeted content edits to `framework.html` to align it precisely with the source Panthera paper (Schuller, Wierckx, Kuhn & Zilic, 2025). No CSS, layout, or visual theme was altered.
@@ -109,6 +163,22 @@
 - Autonomy and Agent Type condensed into a 2-column row of smaller meta blocks
 - Process stages rendered as colored pills (border + tint matching stage cube palette from matrix)
 - Features list uses `→` arrow prefix in accent color instead of default `<ul>` bullets
+
+**Open items**: none from this session
+
+---
+
+### 2026-06-17 — Add 7 new agents as separate entries (non-destructive)
+
+**Summary**: Added BlackRock Aladdin, BlackRock eFront, FinGPT, FinMem, TradingAgents, FinRL-Trading as new individual entries (FinRobot already existed). Modified `build_agents_db.py` to be non-destructive: removed the `os.remove(db_path)` deletion block and added a check-before-insert guard so the script is now idempotent. DB grew to 82 agents.
+
+**Files changed**:
+- `ai_agent_classifier/build_agents_db.py` — removed `os.remove(db_path)` block; added `SELECT id … WHERE name = ?` skip guard in insert loop; added 6 new entries to `agents_data_new`; added 7 new name→category_id mappings to `AGENT_CATEGORY_SEED`
+
+**Design decisions**:
+- BlackRock Aladdin (white/low/analytical, `institutional-quant-alpha`) and BlackRock eFront (white/low/analytical, `research-due-diligence`) added as separate entries; eFront targets private market DD/monitoring, Aladdin targets public market portfolio analytics
+- FinGPT classified low-autonomy (text analysis/signal tool, not a standalone trader); FinMem, TradingAgents, FinRL-Trading all high-autonomy academic agents in `autonomous-trading-engines`
+- `build_agents_db.py` is now safe to re-run without data loss — idempotent inserts
 
 **Open items**: none from this session
 

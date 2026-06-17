@@ -13,6 +13,9 @@ from flask import (
     session,
     url_for,
 )
+from flask_admin import Admin
+from flask_admin.contrib.sqla import ModelView
+from wtforms import TextAreaField
 
 from models import Agent, db
 from seed_data import seed_database
@@ -24,6 +27,8 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///agents.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db.init_app(app)
+
+admin = Admin(app, name="Panthera Admin", url="/admin")
 
 STAGES = [
     ("idea-gen",    "Idea Generation"),
@@ -64,6 +69,66 @@ CATEGORIES = [
     {"id": "client-stakeholder-intelligence", "label": "Stakeholder Intel",  "fullName": "Client & Stakeholder Intelligence",               "color": "#3D3D1A"},
 ]
 CATEGORY_MAP = {c["id"]: c for c in CATEGORIES}
+
+
+# ─── Admin panel ──────────────────────────────────────────────────────────────
+
+class AgentModelView(ModelView):
+    # List view
+    column_list = ("id", "name", "status", "complexity", "advantage", "autonomy", "agent_type", "category_id", "created_at")
+    column_searchable_list = ("name", "description", "url")
+    column_filters = ("status", "complexity", "advantage", "autonomy", "agent_type", "category_id")
+    column_sortable_list = ("id", "name", "status", "complexity", "advantage", "autonomy", "created_at")
+    column_default_sort = ("id", False)
+    column_labels = {
+        "category_id": "Category",
+        "agent_type":  "Type",
+        "created_at":  "Added",
+    }
+
+    # Form layout
+    form_columns = (
+        "name", "url", "description",
+        "agent_type", "category_id", "status",
+        "advantage", "complexity", "autonomy",
+        "stages", "key_features", "rationale",
+    )
+    form_choices = {
+        "status":      [("pending", "Pending"), ("classified", "Classified"), ("rejected", "Rejected")],
+        "advantage":   [("", "— none —"), ("behavioral", "Behavioral"), ("analytical", "Analytical"), ("informational", "Informational")],
+        "complexity":  [("", "— none —"), ("black", "Black Swan"), ("dark-grey", "Dark Grey Swan"), ("light-grey", "Light Grey Swan"), ("white", "White Swan")],
+        "autonomy":    [("", "— none —"), ("low", "Low"), ("medium", "Medium"), ("high", "High"), ("full", "Full")],
+        "agent_type":  [("", "— none —"), ("commercial", "Commercial"), ("in-house", "In-House"), ("academic", "Academic")],
+        "category_id": [("", "— none —")] + [(c["id"], c["fullName"]) for c in CATEGORIES],
+    }
+    form_overrides = {
+        "stages":       TextAreaField,
+        "key_features": TextAreaField,
+        "rationale":    TextAreaField,
+    }
+    form_widget_args = {
+        "description":  {"rows": 4},
+        "stages":       {"rows": 2, "placeholder": '["idea-gen", "decision", "monitoring"]'},
+        "key_features": {"rows": 4, "placeholder": '["Feature one", "Feature two"]'},
+        "rationale":    {"rows": 6, "placeholder": '{"advantage": "...", "complexity": "...", "autonomy": "..."}'},
+        "url":          {"placeholder": "https://"},
+    }
+
+    # Validate JSON fields before saving
+    def on_model_change(self, form, model, is_created):
+        for field in ("stages", "key_features", "rationale"):
+            raw = getattr(form, field).data or ""
+            raw = raw.strip()
+            if raw:
+                try:
+                    json.loads(raw)
+                except json.JSONDecodeError as exc:
+                    raise ValueError(f"'{field}' is not valid JSON: {exc}") from exc
+            setattr(model, field, raw or None)
+
+
+admin.add_view(AgentModelView(Agent, db.session, name="Agents", endpoint="admin_agents"))
+
 
 # Maps exact agent DB names → category id for seeding/migration
 AGENT_CATEGORY_SEED = {
@@ -111,7 +176,7 @@ AGENT_CATEGORY_SEED = {
     "RavenPack News Analytics / Bigdata.com":                 "market-intelligence-aggregators",
     "Dataminr":                                               "market-intelligence-aggregators",
     "AlphaSense":                                             "market-intelligence-aggregators",
-    "Bloomberg AI (BloombergGPT / ASKB)":                     "market-intelligence-aggregators",
+    "Bloomberg ASKB":                                          "market-intelligence-aggregators",
     "Needl":                                                  "market-intelligence-aggregators",
     "Terminal X":                                             "market-intelligence-aggregators",
     "Theia Insights":                                         "market-intelligence-aggregators",
@@ -233,6 +298,7 @@ def matrix():
             "agent_type":  a.agent_type,
             "stages":      a.stages_list,
             "features":    a.features_list,
+            "category_id": a.category_id,
         }
         for a in classified
     ])
@@ -264,6 +330,7 @@ def matrix():
         adv_bar_data=adv_bar_data,
         adv_total_for_pct=adv_total_for_pct,
         agents_json=agents_json,
+        categories=CATEGORIES,
     )
 
 
@@ -288,6 +355,7 @@ def pipeline():
         classified=classified,
         rejected=rejected,
         stage_map=stage_map,
+        category_map=CATEGORY_MAP,
     )
 
 
