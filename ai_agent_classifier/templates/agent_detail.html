@@ -67,6 +67,9 @@
       <div class="card-body p-4">
         <div class="detail-metric-label mb-3">Category Label</div>
         <div class="detail-category-value">{{ cat.fullName if cat else '—' }}</div>
+        {% if cat and cat.get('description') %}
+          <p class="mb-0 mt-3" style="font-size:13px;line-height:1.7;color:var(--text-secondary)">{{ cat.description }}</p>
+        {% endif %}
       </div>
     </div>
 

@@ -882,9 +882,34 @@
 
 <hr class="fw-divider">
 
+<!-- ── Agent Categories ───────────────────────────────────────────────────── -->
+<div class="fw-section">
+  <div class="fw-section-tag"><span class="tag-num">6</span> Agent Categories</div>
+  <h2 class="fw-section-title">10 functional archetypes across the investment process</h2>
+  <p class="fw-section-sub">
+    Every agent in this classification maps to one of ten categories — functional archetypes defined by their stage coverage, autonomy level, and competitive advantage type. Categories are not rigid boxes: they capture the primary role each agent plays in a firm's workflow.
+  </p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-top:24px;">
+    {% for cat in categories %}
+    <div style="background:var(--bg-surface);border:1px solid var(--border);border-left:3px solid {{ cat.color }};border-radius:10px;padding:18px 20px;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">
+        {{ cat.fullName.split('—')[0].strip() if '—' in cat.fullName else '' }}
+      </div>
+      <div style="font-size:15px;font-weight:700;color:var(--text-primary);margin-bottom:10px;line-height:1.3;">
+        {{ cat.fullName.split('—')[1].strip() if '—' in cat.fullName else cat.fullName }}
+      </div>
+      <p style="font-size:13px;line-height:1.7;color:var(--text-secondary);margin:0;">{{ cat.description }}</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<hr class="fw-divider">
+
 <!-- ── How to read the matrix ─────────────────────────────────────────────── -->
 <div class="fw-section">
-  <div class="fw-section-tag"><span class="tag-num">6</span> Reading the Matrix</div>
+  <div class="fw-section-tag"><span class="tag-num">7</span> Reading the Matrix</div>
   <h2 class="fw-section-title">How to use this classification system</h2>
   <p class="fw-section-sub">
     Any AI agent in the investment industry can be pinned to a coordinate in this space.

@@ -347,4 +347,28 @@
 **Open items**:
 - Add an actual screenshot of the matrix to `docs/screenshots/matrix.png`
 
+### 2026-06-18 — Taxonomy v2: 10-category restructure + category descriptions
+
+**Summary**: Applied the final AI_Agent_Categories_Final.md taxonomy (Zilic/Wierckx/Kühn/Schuller, updated 17 June 2026). Dissolved the old CAT-5 "Investment Decision Copilots"; renumbered categories 5–10; renamed five categories; added descriptions to every category; updated ~25 agent category assignments; added a new "Agent Categories" section (section 6) to the Framework page; added category descriptions under the category name on the agent detail page; and ran DB migration to apply all changes.
+
+**Key structural changes**:
+- CAT-5 "Investment Decision Copilots" dissolved — 4 agents redistributed (InvestGPT → CAT-4, Finpilot/Investbanq → CAT-6, Panthera GPS → uncategorized)
+- CAT-3 renamed: Institutional Quant Alpha → Agentic Quant Research Systems; FinRobot moved from CAT-1 to CAT-3; Pluto (Robinhood) moved from CAT-3 to CAT-1
+- CAT-4 renamed: AI Stock Screeners → Quantitative Signal & Screening Tools; TOGGLE, InvestGPT, Theia Insights, Axyon added; Auquan/Aiera removed
+- CAT-5 (new): AI Portfolio Construction & Management (= former CAT-6, renamed); Altruist removed to CAT-10, MDOTM added
+- CAT-6 (new): Investment Research & Document Intelligence (= former CAT-7, expanded); AlphaSense, Auquan, Finpilot, Investbanq, Terminal X, Bloomberg ASKB, Needl, SmartKarma, Blueflame AI added; TOGGLE removed
+- CAT-7 (new): Market Intelligence & Real-Time Monitoring (= former CAT-8); Acuity moved from CAT-2; Aiera, StockSnips moved here
+- CAT-8–10: unchanged names; Hadrius moved from CAT-8 → CAT-9; YourStake/ShareWorks moved from CAT-9 → CAT-10; Altruist added to CAT-10
+- Uncategorized: Panthera GPS, Cognaize, Harmonic, Arteria AI, JPMorgan COIN, Atlas AI, Citi Sky, Linedata, GS AI Assistant, JPMorgan LLM Suite, Kensho, Xceptor
+
+**Files changed**:
+- `ai_agent_classifier/app.py` — `CATEGORIES` (10 entries with new names, labels, descriptions; `investment-decision-copilots` removed); `AGENT_CATEGORY_SEED` (~61 entries with all reassignments); added `UNCATEGORIZED_AGENTS` list; `_migrate_db()` now unconditionally updates all known agents, clears dissolved category and explicitly uncategorized agents; `/framework` route now passes `categories=CATEGORIES`
+- `ai_agent_classifier/build_agents_db.py` — `AGENT_CATEGORY_SEED` updated to match app.py
+- `ai_agent_classifier/templates/agent_detail.html` — category card now shows `cat.description` paragraph below the full category name
+- `ai_agent_classifier/templates/framework.html` — new section 6 "Agent Categories" (10 card grid with category name, CAT number, and description); "Reading the Matrix" renumbered from 6 → 7
+
+**Open items**: none from this session
+
+---
+
 <!-- APPEND NEW SESSIONS ABOVE THIS LINE -->

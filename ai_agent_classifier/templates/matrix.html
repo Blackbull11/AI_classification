@@ -770,12 +770,13 @@ if (quickAddForm) {
       out.push([s,p]); return out;
     }
 
-    // Group agents by (autonomy, exact stage pattern) → one slot per unique combination
+    // Group agents by (autonomy, stage pattern, category) — category is part of the key
+    // so agents from different categories never merge into one bar
     const slotMap = new Map();
     agents.forEach(a => {
       const covIdxs=(a.stages||[]).map(s=>STAGE_KEYS_S.indexOf(s)).filter(i=>i>=0).sort((a,b)=>a-b);
       if (!covIdxs.length) return;
-      const key=`${a.autonomy}|${covIdxs.join(',')}`;
+      const key=`${a.autonomy}|${covIdxs.join(',')}|${a.category_id||''}`;
       if (!slotMap.has(key)) slotMap.set(key,{covIdxs,autonomy:a.autonomy,members:[]});
       slotMap.get(key).members.push(a);
     });

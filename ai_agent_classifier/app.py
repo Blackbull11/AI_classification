@@ -56,17 +56,76 @@ ADVANTAGES = [
 ]
 
 CATEGORIES = [
-    {"id": "autonomous-trading-engines",   "label": "Trading Engine",        "fullName": "Autonomous Trading Engines",                     "color": "#1A3A2A"},
-    {"id": "ai-execution-optimizers",      "label": "Execution Optimizer",   "fullName": "AI Execution Optimizers",                        "color": "#1E3A5F"},
-    {"id": "institutional-quant-alpha",    "label": "Quant Alpha Platform",  "fullName": "Institutional Quant Alpha Platforms",             "color": "#2D5016"},
-    {"id": "ai-stock-screeners",           "label": "Stock Screener",        "fullName": "AI Stock Screeners & Signal Rankers",             "color": "#4A7C59"},
-    {"id": "investment-decision-copilots", "label": "Decision Copilot",      "fullName": "Investment Decision Copilots",                    "color": "#7B3F00"},
-    {"id": "ai-wealth-portfolio-advisors", "label": "Wealth Advisor",        "fullName": "AI Wealth & Portfolio Advisors",                  "color": "#5C2D6E"},
-    {"id": "research-due-diligence",       "label": "Research Assistant",    "fullName": "Investment Research & Due Diligence Assistants",  "color": "#5C4A1E"},
-    {"id": "market-intelligence-aggregators", "label": "Market Intelligence","fullName": "Market Intelligence Aggregators",                 "color": "#1A4A5C"},
-    {"id": "risk-aml-surveillance",        "label": "Risk & AML Monitor",    "fullName": "Risk, AML & Surveillance Monitors",               "color": "#5C1A1A"},
-    {"id": "esg-regulatory-compliance",    "label": "ESG & Compliance",      "fullName": "ESG & Regulatory Compliance Platforms",           "color": "#2E5C3E"},
-    {"id": "client-stakeholder-intelligence", "label": "Stakeholder Intel",  "fullName": "Client & Stakeholder Intelligence",               "color": "#3D3D1A"},
+    {
+        "id": "autonomous-trading-engines",
+        "label": "Trading Engine",
+        "fullName": "CAT-1 — Autonomous Trading Engines",
+        "color": "#1A3A2A",
+        "description": "Fully or highly autonomous systems that execute trades without per-trade human input. The AI drives the full pipeline from signal generation through live execution, either by selecting portfolios outright or by running user-defined strategies end-to-end.",
+    },
+    {
+        "id": "ai-execution-optimizers",
+        "label": "Execution Optimizer",
+        "fullName": "CAT-2 — AI Execution Optimizers",
+        "color": "#1E3A5F",
+        "description": "Narrowly specialized in how an already-decided trade is executed — minimizing market impact, slippage, and timing costs. These agents receive a trading decision from upstream; they do not generate it. The edge is microstructure optimization, not strategy.",
+    },
+    {
+        "id": "institutional-quant-alpha",
+        "label": "Quant Research",
+        "fullName": "CAT-3 — Agentic Quant Research Systems",
+        "color": "#2D5016",
+        "description": "The AI drives the research process itself — self-initiating hypothesis generation, running iterative evaluation loops, or orchestrating multi-agent debate without per-step human instruction. Distinct from screeners by autonomy: the system decides what to research, not just how to execute a human-defined query.",
+    },
+    {
+        "id": "ai-stock-screeners",
+        "label": "Signal & Screening",
+        "fullName": "CAT-4 — Quantitative Signal & Screening Tools",
+        "color": "#4A7C59",
+        "description": "The human defines the research question; the tool executes the analysis and returns scores, signals, or backtested results. Low autonomy is the structural separator from CAT-3. Output is always an input to a human decision — never a recommendation acted upon without review.",
+    },
+    {
+        "id": "ai-wealth-portfolio-advisors",
+        "label": "Portfolio Construction",
+        "fullName": "CAT-5 — AI Portfolio Construction & Management",
+        "color": "#5C2D6E",
+        "description": "Goes beyond signal generation to construct and manage actual portfolio allocations at scale. Output is an actionable portfolio with risk attribution, rebalancing rules, and monitoring — not a signal or research document. Medium autonomy: the system acts within pre-approved mandates; humans review the mandate, not each trade.",
+    },
+    {
+        "id": "research-due-diligence",
+        "label": "Research & Intelligence",
+        "fullName": "CAT-6 — Investment Research & Document Intelligence",
+        "color": "#5C4A1E",
+        "description": "Pull-based knowledge synthesis — the human asks a question or defines a task; the system searches documents, filings, research, or databases and produces a synthesized output. Distinguished from CAT-7 by being document-heavy and query-driven rather than push-based and real-time.",
+    },
+    {
+        "id": "market-intelligence-aggregators",
+        "label": "Market Intelligence",
+        "fullName": "CAT-7 — Market Intelligence & Real-Time Monitoring",
+        "color": "#1A4A5C",
+        "description": "Push-based intelligence — the system continuously monitors data sources and proactively surfaces alerts or structured signals when relevant events occur, without being queried. Output is a data feed, structured alert, or event notification, not a document or analytical synthesis.",
+    },
+    {
+        "id": "risk-aml-surveillance",
+        "label": "Risk & AML Monitor",
+        "fullName": "CAT-8 — Risk, AML & Surveillance Monitors",
+        "color": "#5C1A1A",
+        "description": "Automated watchdog systems that detect misconduct, financial crime, or anomalies in transaction and communication data. The analytical edge is pattern recognition across noisy, high-dimensional data streams. These agents operate in the regulatory compliance perimeter, not the investment decision pipeline.",
+    },
+    {
+        "id": "esg-regulatory-compliance",
+        "label": "ESG & Compliance",
+        "fullName": "CAT-9 — ESG & Regulatory Compliance Platforms",
+        "color": "#2E5C3E",
+        "description": "Tools focused on sustainability intelligence, regulatory reporting, and compliance workflow automation. Distinct from CAT-8 in subject matter: these agents assess non-financial risk dimensions (ESG, regulatory obligations, operational due diligence) rather than detecting misconduct or financial crime.",
+    },
+    {
+        "id": "client-stakeholder-intelligence",
+        "label": "Stakeholder Intel",
+        "fullName": "CAT-10 — Client & Stakeholder Intelligence",
+        "color": "#3D3D1A",
+        "description": "AI tools serving client-facing teams — relationship intelligence, meeting capture, client reporting, equity plan administration, and investor communications. The output serves the advisor-client or IR relationship, not the investment decision process.",
+    },
 ]
 CATEGORY_MAP = {c["id"]: c for c in CATEGORIES}
 
@@ -136,69 +195,79 @@ AGENT_CATEGORY_SEED = {
     "Numerai (Meta Model)":                                   "autonomous-trading-engines",
     "Academic Trading Agents (FinGPT / FinMem / TradingAgents)": "autonomous-trading-engines",
     "FLAG-Trader":                                            "autonomous-trading-engines",
-    "FinRobot":                                               "autonomous-trading-engines",
+    # CAT-2: AI Execution Optimizers
     "JPMorgan LOXM":                                          "ai-execution-optimizers",
     "Shavandi & Khedmati Multi-Agent DRL":                    "ai-execution-optimizers",
     "Aiden (VWAP & Arrival) — RBC Capital Markets":           "ai-execution-optimizers",
-    "Acuity (Acuity Trading)":                                "ai-execution-optimizers",
+    # CAT-3: Agentic Quant Research Systems
     "QuantAgent":                                             "institutional-quant-alpha",
     "JPMorgan IndexGPT":                                      "institutional-quant-alpha",
     "BlackRock AlphaAgents":                                  "institutional-quant-alpha",
-    "Pluto.fi (Robinhood)":                                   "institutional-quant-alpha",
-    "Pluto (Robinhood)":                                      "institutional-quant-alpha",
-    "Axyon AI":                                               "institutional-quant-alpha",
-    "Neural Alpha":                                           "institutional-quant-alpha",
-    "Boosted.ai":                                             "institutional-quant-alpha",
-    "SigTech":                                                "institutional-quant-alpha",
-    "MDOTM (Sei)":                                            "institutional-quant-alpha",
+    "FinRobot":                                               "institutional-quant-alpha",
+    # CAT-4: Quantitative Signal & Screening Tools
     "Kavout":                                                 "ai-stock-screeners",
-    "Auquan":                                                 "ai-stock-screeners",
+    "Kavout K-Score":                                         "ai-stock-screeners",
     "StockBench":                                             "ai-stock-screeners",
+    "Axyon AI":                                               "ai-stock-screeners",
+    "Axyon Foresight":                                        "ai-stock-screeners",
+    "Axyon IRIS":                                             "ai-stock-screeners",
+    "Boosted.ai":                                             "ai-stock-screeners",
     "Bridget / ThemeWise":                                    "ai-stock-screeners",
-    "Aiera":                                                  "ai-stock-screeners",
-    "InvestGPT (Kavout)":                                     "investment-decision-copilots",
-    "Finpilot":                                               "investment-decision-copilots",
-    "Investbanq Co-Pilot":                                    "investment-decision-copilots",
-    "Panthera Decision GPS":                                  "investment-decision-copilots",
+    "Neural Alpha":                                           "ai-stock-screeners",
+    "SigTech":                                                "ai-stock-screeners",
+    "Theia Insights":                                         "ai-stock-screeners",
+    "TOGGLE Copilot / Pro":                                   "ai-stock-screeners",
+    "InvestGPT (Kavout)":                                     "ai-stock-screeners",
+    # CAT-5: AI Portfolio Construction & Management
     "Vise AI":                                                "ai-wealth-portfolio-advisors",
     "ARKEN Finance":                                          "ai-wealth-portfolio-advisors",
-    "Altruist AI Agents":                                     "ai-wealth-portfolio-advisors",
+    "MDOTM (Sei)":                                            "ai-wealth-portfolio-advisors",
+    # CAT-6: Investment Research & Document Intelligence
     "Wokelo Agentic Builder":                                 "research-due-diligence",
-    "V7 Go (Due Diligence Agent)":                            "research-due-diligence",
-    "TOGGLE Copilot / Pro":                                   "research-due-diligence",
     "Hebbia":                                                 "research-due-diligence",
-    "DiligenceSquared":                                       "research-due-diligence",
+    "V7 Go (Due Diligence Agent)":                            "research-due-diligence",
+    "AlphaSense":                                             "research-due-diligence",
+    "Auquan":                                                 "research-due-diligence",
+    "Finpilot":                                               "research-due-diligence",
+    "Investbanq Co-Pilot":                                    "research-due-diligence",
     "EILLA AI":                                               "research-due-diligence",
-    "SmartKarma":                                             "research-due-diligence",
+    "BlackRock Aladdin":                                      "research-due-diligence",
+    "DiligenceSquared":                                       "research-due-diligence",
+    "Bloomberg ASKB":                                         "research-due-diligence",
+    "Terminal X":                                             "research-due-diligence",
+    "Morgan Stanley AI Assistant":                            "research-due-diligence",
+    "AskResearchGPT (Morgan Stanley)":                        "research-due-diligence",
+    "FactSet Intelligence":                                   "research-due-diligence",
+    "Blueflame AI":                                           "research-due-diligence",
     "Rogo":                                                   "research-due-diligence",
-    "Cognaize":                                               "research-due-diligence",
-    "Harmonic":                                               "research-due-diligence",
+    "SmartKarma":                                             "research-due-diligence",
+    "Needl":                                                  "research-due-diligence",
+    # CAT-7: Market Intelligence & Real-Time Monitoring
     "RavenPack News Analytics / Bigdata.com":                 "market-intelligence-aggregators",
+    "RavenPack  / Bigdata.com":                               "market-intelligence-aggregators",
     "Dataminr":                                               "market-intelligence-aggregators",
-    "AlphaSense":                                             "market-intelligence-aggregators",
-    "Bloomberg ASKB":                                          "market-intelligence-aggregators",
-    "Needl":                                                  "market-intelligence-aggregators",
-    "Terminal X":                                             "market-intelligence-aggregators",
-    "Theia Insights":                                         "market-intelligence-aggregators",
+    "Acuity (Acuity Trading)":                                "market-intelligence-aggregators",
+    "StockSnips":                                             "market-intelligence-aggregators",
+    "Aiera":                                                  "market-intelligence-aggregators",
+    # CAT-8: Risk, AML & Surveillance Monitors
     "Ayasdi (SymphonyAI)":                                    "risk-aml-surveillance",
     "NICE Actimize SURVEIL-X / Actimize Intelligence":        "risk-aml-surveillance",
     "Holistic AI":                                            "risk-aml-surveillance",
     "Behavox (Quantum / Polaris)":                            "risk-aml-surveillance",
-    "Hadrius":                                                "risk-aml-surveillance",
+    # CAT-9: ESG & Regulatory Compliance Platforms
     "Clarity AI":                                             "esg-regulatory-compliance",
     "MSCI AI Portfolio Insights":                             "esg-regulatory-compliance",
-    "ShareWorks / Equity Edge MCP (Morgan Stanley)":          "esg-regulatory-compliance",
     "Riskspan":                                               "esg-regulatory-compliance",
-    "YourStake":                                              "esg-regulatory-compliance",
+    "Hadrius":                                                "esg-regulatory-compliance",
     "Norm AI":                                                "esg-regulatory-compliance",
-    "Arteria AI":                                             "esg-regulatory-compliance",
-    "JPMorgan COIN":                                          "esg-regulatory-compliance",
+    # CAT-10: Client & Stakeholder Intelligence
     "Affinity AI":                                            "client-stakeholder-intelligence",
     "Portrait Analytics":                                     "client-stakeholder-intelligence",
     "AI @ Morgan Stanley Debrief":                            "client-stakeholder-intelligence",
     "Morningstar 'Mo' / Intelligence Engine":                 "client-stakeholder-intelligence",
-    "StockSnips":                                             "client-stakeholder-intelligence",
-    "Atlas AI":                                               "client-stakeholder-intelligence",
+    "Altruist AI Agents":                                     "client-stakeholder-intelligence",
+    "ShareWorks / Equity Edge MCP (Morgan Stanley)":          "client-stakeholder-intelligence",
+    "YourStake":                                              "client-stakeholder-intelligence",
 }
 
 
@@ -662,7 +731,7 @@ def guide():
 @app.route("/")
 @app.route("/framework")
 def framework():
-    return render_template("framework.html")
+    return render_template("framework.html", categories=CATEGORIES)
 
 
 # ─── API ─────────────────────────────────────────────────────────────────────
@@ -723,18 +792,44 @@ def _save_step_to_draft(draft, step, form):
 
 # ─── Entry point ─────────────────────────────────────────────────────────────
 
+UNCATEGORIZED_AGENTS = [
+    "Panthera Decision GPS",
+    "Cognaize",
+    "Harmonic",
+    "Arteria AI",
+    "JPMorgan COIN",
+    "Atlas AI",
+    "Citi Sky / Arc Platform",
+    "Linedata",
+    "Goldman Sachs GS AI Assistant",
+    "JPMorgan LLM Suite",
+    "Kensho NERD / Classify / Scribe",
+    "Xceptor",
+]
+
+
 def _migrate_db():
-    """Add missing columns and back-fill category_id for known agents."""
+    """Add missing columns and re-apply category assignments from current taxonomy."""
     from sqlalchemy import text
     with db.engine.connect() as conn:
         cols = [row[1] for row in conn.execute(text("PRAGMA table_info(agents)")).fetchall()]
         if "category_id" not in cols:
             conn.execute(text("ALTER TABLE agents ADD COLUMN category_id VARCHAR(50)"))
             conn.commit()
+        # Unconditionally update all known agent categories (overwrites stale assignments)
         for name, cat_id in AGENT_CATEGORY_SEED.items():
             conn.execute(
-                text("UPDATE agents SET category_id = :cat WHERE name = :name AND (category_id IS NULL OR category_id = '')"),
+                text("UPDATE agents SET category_id = :cat WHERE name = :name"),
                 {"cat": cat_id, "name": name},
+            )
+        # Clear category for dissolved category and explicitly uncategorized agents
+        conn.execute(
+            text("UPDATE agents SET category_id = NULL WHERE category_id = 'investment-decision-copilots'")
+        )
+        for name in UNCATEGORIZED_AGENTS:
+            conn.execute(
+                text("UPDATE agents SET category_id = NULL WHERE name = :name"),
+                {"name": name},
             )
         conn.commit()
 
