@@ -73,6 +73,24 @@
         </div>
       </div>
 
+      <!-- Q5: Category -->
+      <div class="guide-q-block">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <span class="guide-step-num">05</span>
+          <span class="guide-q-title">Category label</span>
+        </div>
+        <p class="guide-q-hint">Filter by functional role across agents</p>
+        <div class="guide-chips-wrap">
+          <button class="guide-chip selected" data-val="any" data-group="category">Any</button>
+          {% for cat in categories %}
+          <button class="guide-chip guide-cat-chip"
+                  data-val="{{ cat.id }}"
+                  data-group="category"
+                  data-cat-color="{{ cat.color }}">{{ cat.label }}</button>
+          {% endfor %}
+        </div>
+      </div>
+
     </div>
   </div><!-- /.col sidebar -->
 
@@ -115,12 +133,18 @@ const CX_LABELS = {
   'light-grey': 'Light Grey Swan',
   'white':      'White Swan',
 };
+const CAT_LABELS = {
+  {% for cat in categories %}
+  '{{ cat.id }}': '{{ cat.fullName }}',
+  {% endfor %}
+};
 
 // ── Filter state ──────────────────────────────────────────────────────
 let selectedStages = new Set();
 let selectedAdv    = 'any';
 let selectedAuto   = 'any';
 let selectedCx     = 'any';
+let selectedCat    = 'any';
 
 // ── Stage: multi-select ───────────────────────────────────────────────
 document.querySelectorAll('[data-group="stage"]').forEach(btn => {
@@ -159,6 +183,22 @@ function clearStages() {
   });
 });
 
+// ── Category: single-select with per-chip colors ──────────────────────
+document.querySelectorAll('[data-group="category"]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-group="category"]').forEach(b => {
+      b.classList.remove('selected');
+      b.style.removeProperty('--cat-chip-color');
+    });
+    btn.classList.add('selected');
+    selectedCat = btn.dataset.val;
+    if (btn.dataset.catColor) {
+      btn.style.setProperty('--cat-chip-color', btn.dataset.catColor);
+    }
+    updateResults();
+  });
+});
+
 // ── Core filter + render ──────────────────────────────────────────────
 function updateResults() {
   const stages = [...selectedStages];
@@ -168,7 +208,8 @@ function updateResults() {
     const advOk   = selectedAdv  === 'any' || a.advantage  === selectedAdv;
     const autoOk  = selectedAuto === 'any' || a.autonomy   === selectedAuto;
     const cxOk    = selectedCx   === 'any' || a.complexity === selectedCx;
-    return stageOk && advOk && autoOk && cxOk;
+    const catOk   = selectedCat  === 'any' || a.category_id === selectedCat;
+    return stageOk && advOk && autoOk && cxOk && catOk;
   });
 
   if (stages.length > 0) {
@@ -198,10 +239,15 @@ function updateResults() {
       ? `<span class="adv-pill adv-pill-${a.advantage}">${cap(a.advantage)}</span>`
       : '';
 
+    const catLabel = a.category_id ? CAT_LABELS[a.category_id] : null;
+    const catPill  = catLabel
+      ? `<span class="guide-cat-label">${esc(catLabel)}</span>`
+      : '';
+
     const metaPills = [
-      a.agent_type  ? capType(a.agent_type)                   : null,
+      a.agent_type  ? capType(a.agent_type)                     : null,
       a.complexity  ? (CX_LABELS[a.complexity] || a.complexity) : null,
-      a.autonomy    ? cap(a.autonomy) + ' autonomy'           : null,
+      a.autonomy    ? cap(a.autonomy) + ' autonomy'             : null,
     ].filter(Boolean)
      .map(t => `<span class="guide-meta-pill">${esc(t)}</span>`)
      .join('');
@@ -227,6 +273,7 @@ function updateResults() {
             <a href="/agents/${a.id}" class="guide-agent-name text-decoration-none">${esc(a.name)}</a>
             ${advPill}
           </div>
+          ${catPill}
           <div class="d-flex gap-1 flex-wrap mb-2">${metaPills}</div>
           ${a.description ? `<p class="guide-agent-desc">${esc(a.description)}</p>` : ''}
           ${stageRow}

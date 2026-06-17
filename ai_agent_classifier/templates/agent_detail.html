@@ -3,8 +3,13 @@
 
 {% block content %}
 {%- set rd = agent.rationale_dict -%}
+{%- set cat = category_map.get(agent.category_id) -%}
+{%- set stage_color = {
+  'idea-gen':'#4A7A3A','idea-assess':'#C8A828','decision':'#6478C0',
+  'execution':'#CC7830','monitoring':'#9868A8','compliance':'#3A9888','stakeholder':'#C04848'
+} -%}
 
-<!-- ── Hero header ──────────────────────────────────────────────────────── -->
+<!-- ── Hero ─────────────────────────────────────────────────────────────── -->
 <div class="detail-hero mb-4">
   <nav aria-label="breadcrumb" class="mb-2">
     <ol class="breadcrumb mb-0" style="font-size:12px">
@@ -54,12 +59,21 @@
 <!-- ── Main grid ────────────────────────────────────────────────────────── -->
 <div class="row g-4 align-items-start">
 
-  <!-- ── Left col: Description + Features (mobile: shown second) ──────── -->
-  <div class="col-lg-7 order-2 order-lg-1">
-    <div class="card border-0 shadow-sm h-100">
+  <!-- ── LEFT: Category + Description + Features (mobile: 2nd) ──────────── -->
+  <div class="col-12 col-detail-left order-2 order-lg-1 d-flex flex-column gap-4">
+
+    <!-- Category label -->
+    <div class="card border-0 shadow-sm detail-category-card">
+      <div class="card-body p-4">
+        <div class="detail-metric-label mb-3">Category Label</div>
+        <div class="detail-category-value">{{ cat.fullName if cat else '—' }}</div>
+      </div>
+    </div>
+
+    <!-- Description + Key Features + Notes -->
+    <div class="card border-0 shadow-sm">
       <div class="card-body p-4">
 
-        <!-- Description -->
         <div class="detail-section-title">Description</div>
         {% if agent.description %}
           <p class="detail-description mb-0">{{ agent.description }}</p>
@@ -67,7 +81,6 @@
           <p class="text-muted mb-0 small">No description provided.</p>
         {% endif %}
 
-        <!-- Key features -->
         {% set feats = agent.features_list %}
         {% if feats %}
           <div class="detail-divider"></div>
@@ -79,7 +92,6 @@
           </ul>
         {% endif %}
 
-        <!-- Analyst notes -->
         {% if rd.get('general') %}
           <div class="detail-divider"></div>
           <div class="detail-section-title">Analyst Notes</div>
@@ -90,83 +102,19 @@
 
       </div>
     </div>
+
   </div>
 
-  <!-- ── Right col: Classification (mobile: shown first) ──────────────── -->
-  <div class="col-lg-5 order-1 order-lg-2">
+  <!-- ── RIGHT: Classification (mobile: 1st) ────────────────────────────── -->
+  <div class="col-12 col-detail-right order-1 order-lg-2">
     <div class="card border-0 shadow-sm" style="position:sticky;top:16px">
       <div class="card-body p-4">
+
         <div class="detail-section-title">Classification</div>
 
-        <!-- Comparative Advantage -->
-        {% if agent.advantage %}
-          {%- set adv_color  = {'behavioral':'var(--beh)','analytical':'var(--ana)','informational':'var(--inf)'}-%}
-          {%- set adv_bg     = {'behavioral':'rgba(224,97,58,0.10)','analytical':'rgba(29,184,122,0.10)','informational':'rgba(239,159,39,0.10)'} -%}
-          {%- set adv_border = {'behavioral':'rgba(224,97,58,0.28)','analytical':'rgba(29,184,122,0.28)','informational':'rgba(239,159,39,0.28)'} -%}
-          <div class="detail-metric-block mb-3"
-               style="background:{{ adv_bg.get(agent.advantage,'var(--bg-elevated)') }};
-                      border-color:{{ adv_border.get(agent.advantage,'var(--border)') }}">
-            <div class="detail-metric-label">Comparative Advantage</div>
-            <div class="detail-metric-value" style="color:{{ adv_color.get(agent.advantage,'var(--text-primary)') }}">
-              {{ advantage_labels.get(agent.advantage, agent.advantage) }}
-            </div>
-            {% if rd.get('advantage') %}
-              <div class="detail-metric-rationale">{{ rd.advantage }}</div>
-            {% endif %}
-          </div>
-        {% endif %}
-
-        <!-- Complexity Tier -->
-        {% if agent.complexity %}
-          {%- set cx_bg     = {'black':'rgba(20,20,20,0.85)','dark-grey':'rgba(55,55,55,0.55)','light-grey':'rgba(176,176,176,0.12)','white':'rgba(230,230,230,0.08)'} -%}
-          {%- set cx_color  = {'black':'#D8D8D8','dark-grey':'#E0E0E0','light-grey':'#C8C8C8','white':'#B8B8B8'} -%}
-          {%- set cx_border = {'black':'rgba(80,80,80,0.55)','dark-grey':'rgba(110,110,110,0.40)','light-grey':'rgba(160,160,160,0.30)','white':'rgba(200,200,200,0.22)'} -%}
-          <div class="detail-metric-block mb-3"
-               style="background:{{ cx_bg.get(agent.complexity,'var(--bg-elevated)') }};
-                      border-color:{{ cx_border.get(agent.complexity,'var(--border)') }}">
-            <div class="detail-metric-label">Complexity Tier</div>
-            <div class="detail-metric-value" style="color:{{ cx_color.get(agent.complexity,'var(--text-primary)') }}">
-              {{ complexity_labels.get(agent.complexity, agent.complexity) }}
-            </div>
-            {% if rd.get('complexity') %}
-              <div class="detail-metric-rationale">{{ rd.complexity }}</div>
-            {% endif %}
-          </div>
-        {% endif %}
-
-        <!-- Autonomy + Agent Type -->
-        <div class="row g-3 mb-3">
-          <div class="col-6">
-            <div class="detail-meta-block h-100">
-              <div class="detail-metric-label">Autonomy</div>
-              <div class="detail-meta-value">
-                {%- if agent.autonomy == 'full' %}Fully Autonomous
-                {%- elif agent.autonomy %}{{ agent.autonomy|title }}
-                {%- else %}—{% endif -%}
-              </div>
-              {% if rd.get('autonomy') %}
-                <div class="detail-metric-rationale" style="font-size:11px">{{ rd.autonomy }}</div>
-              {% endif %}
-            </div>
-          </div>
-          <div class="col-6">
-            <div class="detail-meta-block h-100">
-              <div class="detail-metric-label">Agent Type</div>
-              <div class="detail-meta-value">{{ agent.agent_type|replace('-',' ')|title if agent.agent_type else '—' }}</div>
-              {% if rd.get('agent_type') %}
-                <div class="detail-metric-rationale" style="font-size:11px">{{ rd.agent_type }}</div>
-              {% endif %}
-            </div>
-          </div>
-        </div>
-
-        <!-- Process Stages -->
+        <!-- Process Stages — full width at top -->
         {% if agent.stages_list %}
-          {%- set stage_color = {
-            'idea-gen':'#4A7A3A','idea-assess':'#C8A828','decision':'#6478C0',
-            'execution':'#CC7830','monitoring':'#9868A8','compliance':'#3A9888','stakeholder':'#C04848'
-          } -%}
-          <div class="detail-stages-block">
+          <div class="detail-stages-block mb-3">
             <div class="detail-metric-label mb-2">Process Stages</div>
             <div class="d-flex flex-wrap gap-2">
               {% for sk in agent.stages_list %}
@@ -183,6 +131,81 @@
             {% endif %}
           </div>
         {% endif %}
+
+        <!-- 2×2 grid: Advantage | Agent Type, then Complexity | Autonomy -->
+        <div class="row g-3">
+
+          <!-- Comparative Advantage (wider) -->
+          {% if agent.advantage %}
+            {%- set adv_color  = {'behavioral':'var(--beh)','analytical':'var(--ana)','informational':'var(--inf)'}-%}
+            {%- set adv_bg     = {'behavioral':'rgba(224,97,58,0.10)','analytical':'rgba(29,184,122,0.10)','informational':'rgba(239,159,39,0.10)'} -%}
+            {%- set adv_border = {'behavioral':'rgba(224,97,58,0.28)','analytical':'rgba(29,184,122,0.28)','informational':'rgba(239,159,39,0.28)'} -%}
+            <div class="col-7">
+              <div class="detail-metric-block h-100"
+                   style="background:{{ adv_bg.get(agent.advantage,'var(--bg-elevated)') }};
+                          border-color:{{ adv_border.get(agent.advantage,'var(--border)') }}">
+                <div class="detail-metric-label">Comparative Advantage</div>
+                <div class="detail-metric-value" style="color:{{ adv_color.get(agent.advantage,'var(--text-primary)') }}">
+                  {{ advantage_labels.get(agent.advantage, agent.advantage) }}
+                </div>
+                {% if rd.get('advantage') %}
+                  <div class="detail-metric-rationale">{{ rd.advantage }}</div>
+                {% endif %}
+              </div>
+            </div>
+          {% else %}
+            <div class="col-7"></div>
+          {% endif %}
+
+          <!-- Agent Type (narrower) -->
+          <div class="col-5">
+            <div class="detail-meta-block h-100">
+              <div class="detail-metric-label">Agent Type</div>
+              <div class="detail-meta-value">{{ agent.agent_type|replace('-',' ')|title if agent.agent_type else '—' }}</div>
+              {% if rd.get('agent_type') %}
+                <div class="detail-metric-rationale" style="font-size:11px">{{ rd.agent_type }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Complexity Tier (wider) -->
+          {% if agent.complexity %}
+            {%- set cx_bg     = {'black':'rgba(20,20,20,0.85)','dark-grey':'rgba(55,55,55,0.55)','light-grey':'rgba(176,176,176,0.12)','white':'rgba(230,230,230,0.08)'} -%}
+            {%- set cx_color  = {'black':'#D8D8D8','dark-grey':'#E0E0E0','light-grey':'#C8C8C8','white':'#B8B8B8'} -%}
+            {%- set cx_border = {'black':'rgba(80,80,80,0.55)','dark-grey':'rgba(110,110,110,0.40)','light-grey':'rgba(160,160,160,0.30)','white':'rgba(200,200,200,0.22)'} -%}
+            <div class="col-7">
+              <div class="detail-metric-block h-100"
+                   style="background:{{ cx_bg.get(agent.complexity,'var(--bg-elevated)') }};
+                          border-color:{{ cx_border.get(agent.complexity,'var(--border)') }}">
+                <div class="detail-metric-label">Complexity Tier</div>
+                <div class="detail-metric-value" style="color:{{ cx_color.get(agent.complexity,'var(--text-primary)') }}">
+                  {{ complexity_labels.get(agent.complexity, agent.complexity) }}
+                </div>
+                {% if rd.get('complexity') %}
+                  <div class="detail-metric-rationale">{{ rd.complexity }}</div>
+                {% endif %}
+              </div>
+            </div>
+          {% else %}
+            <div class="col-7"></div>
+          {% endif %}
+
+          <!-- Autonomy (narrower) -->
+          <div class="col-5">
+            <div class="detail-meta-block h-100">
+              <div class="detail-metric-label">Autonomy</div>
+              <div class="detail-meta-value">
+                {%- if agent.autonomy == 'full' %}Fully Autonomous
+                {%- elif agent.autonomy %}{{ agent.autonomy|title }}
+                {%- else %}—{% endif -%}
+              </div>
+              {% if rd.get('autonomy') %}
+                <div class="detail-metric-rationale" style="font-size:11px">{{ rd.autonomy }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+        </div><!-- /row g-3 -->
 
       </div>
     </div>

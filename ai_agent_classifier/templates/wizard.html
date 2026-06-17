@@ -65,6 +65,22 @@
             </div>
 
             <div class="mb-4">
+              <label class="form-label fw-semibold">Category label</label>
+              <select name="category_id" class="form-select">
+                <option value="">— Unassigned —</option>
+                {% for cat in categories %}
+                  <option value="{{ cat.id }}"
+                    {% if draft.get('category_id') == cat.id %}selected{% endif %}>
+                    {{ cat.fullName }}
+                  </option>
+                {% endfor %}
+              </select>
+              <div class="form-text" style="font-size:11px">
+                Groups this agent with others serving the same purpose. Select the closest match.
+              </div>
+            </div>
+
+            <div class="mb-4">
               <label class="form-label fw-semibold">Agent type</label>
               <div class="d-flex flex-column gap-2 mt-1">
                 {% for val, label, desc in [
@@ -462,11 +478,19 @@
                     'informational': 'Informational'
                   } %}
 
+                  {%- set cat_map_local = {} -%}
+                  {%- for cat in categories -%}
+                    {%- set _ = cat_map_local.update({cat.id: cat.label}) -%}
+                  {%- endfor -%}
                   <table class="table table-sm table-borderless mb-0">
                     <tbody>
                       <tr>
                         <td class="text-muted small fw-semibold" style="width:40%">Name</td>
                         <td class="small">{{ draft.get('name') or '—' }}</td>
+                      </tr>
+                      <tr>
+                        <td class="text-muted small fw-semibold">Category</td>
+                        <td class="small">{{ cat_map_local.get(draft.get('category_id'), '—') }}</td>
                       </tr>
                       <tr>
                         <td class="text-muted small fw-semibold">Type</td>

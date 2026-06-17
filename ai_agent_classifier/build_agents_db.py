@@ -8,8 +8,8 @@ def generate_database():
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
 
     # Remove existing DB so we start clean
-    # if os.path.exists(db_path):
-    #     os.remove(db_path)
+    if os.path.exists(db_path):
+        os.remove(db_path)
 
     conn   = sqlite3.connect(db_path)
     cursor = conn.cursor()
@@ -27,10 +27,91 @@ def generate_database():
             agent_type TEXT,
             complexity TEXT,
             stages TEXT,
+            category_id TEXT,
             status TEXT NOT NULL,
             created_at DATETIME
         )
     ''')
+
+    # Add category_id column to existing databases that predate this field
+    existing_cols = [row[1] for row in cursor.execute("PRAGMA table_info(agents)").fetchall()]
+    if "category_id" not in existing_cols:
+        cursor.execute("ALTER TABLE agents ADD COLUMN category_id TEXT")
+
+    AGENT_CATEGORY_SEED = {
+        "AIEQ / EquBot":                                          "autonomous-trading-engines",
+        "Numerai (Meta Model)":                                   "autonomous-trading-engines",
+        "Academic Trading Agents (FinGPT / FinMem / TradingAgents)": "autonomous-trading-engines",
+        "FLAG-Trader":                                            "autonomous-trading-engines",
+        "FinRobot":                                               "autonomous-trading-engines",
+        "JPMorgan LOXM":                                          "ai-execution-optimizers",
+        "Shavandi & Khedmati Multi-Agent DRL":                    "ai-execution-optimizers",
+        "Aiden (VWAP & Arrival) — RBC Capital Markets":           "ai-execution-optimizers",
+        "Acuity (Acuity Trading)":                                "ai-execution-optimizers",
+        "QuantAgent":                                             "institutional-quant-alpha",
+        "JPMorgan IndexGPT":                                      "institutional-quant-alpha",
+        "BlackRock AlphaAgents":                                  "institutional-quant-alpha",
+        "Pluto.fi (Robinhood)":                                   "institutional-quant-alpha",
+        "Pluto (Robinhood)":                                      "institutional-quant-alpha",
+        "Axyon AI":                                               "institutional-quant-alpha",
+        "Neural Alpha":                                           "institutional-quant-alpha",
+        "Boosted.ai":                                             "institutional-quant-alpha",
+        "SigTech":                                                "institutional-quant-alpha",
+        "MDOTM (Sei)":                                            "institutional-quant-alpha",
+        "Kavout":                                                 "ai-stock-screeners",
+        "Auquan":                                                 "ai-stock-screeners",
+        "StockBench":                                             "ai-stock-screeners",
+        "Bridget / ThemeWise":                                    "ai-stock-screeners",
+        "Aiera":                                                  "ai-stock-screeners",
+        "InvestGPT (Kavout)":                                     "investment-decision-copilots",
+        "Finpilot":                                               "investment-decision-copilots",
+        "Investbanq Co-Pilot":                                    "investment-decision-copilots",
+        "Panthera Decision GPS":                                  "investment-decision-copilots",
+        "Vise AI":                                                "ai-wealth-portfolio-advisors",
+        "ARKEN Finance":                                          "ai-wealth-portfolio-advisors",
+        "Altruist AI Agents":                                     "ai-wealth-portfolio-advisors",
+        "Wokelo Agentic Builder":                                 "research-due-diligence",
+        "V7 Go (Due Diligence Agent)":                            "research-due-diligence",
+        "TOGGLE Copilot / Pro":                                   "research-due-diligence",
+        "Hebbia":                                                 "research-due-diligence",
+        "DiligenceSquared":                                       "research-due-diligence",
+        "EILLA AI":                                               "research-due-diligence",
+        "SmartKarma":                                             "research-due-diligence",
+        "Rogo":                                                   "research-due-diligence",
+        "Cognaize":                                               "research-due-diligence",
+        "Harmonic":                                               "research-due-diligence",
+        "RavenPack News Analytics / Bigdata.com":                 "market-intelligence-aggregators",
+        "Dataminr":                                               "market-intelligence-aggregators",
+        "AlphaSense":                                             "market-intelligence-aggregators",
+        "Bloomberg AI (BloombergGPT / ASKB)":                     "market-intelligence-aggregators",
+        "Needl":                                                  "market-intelligence-aggregators",
+        "Terminal X":                                             "market-intelligence-aggregators",
+        "Theia Insights":                                         "market-intelligence-aggregators",
+        "Ayasdi (SymphonyAI)":                                    "risk-aml-surveillance",
+        "NICE Actimize SURVEIL-X / Actimize Intelligence":        "risk-aml-surveillance",
+        "Holistic AI":                                            "risk-aml-surveillance",
+        "Behavox (Quantum / Polaris)":                            "risk-aml-surveillance",
+        "Hadrius":                                                "risk-aml-surveillance",
+        "Clarity AI":                                             "esg-regulatory-compliance",
+        "MSCI AI Portfolio Insights":                             "esg-regulatory-compliance",
+        "ShareWorks / Equity Edge MCP (Morgan Stanley)":          "esg-regulatory-compliance",
+        "Riskspan":                                               "esg-regulatory-compliance",
+        "YourStake":                                              "esg-regulatory-compliance",
+        "Norm AI":                                                "esg-regulatory-compliance",
+        "Arteria AI":                                             "esg-regulatory-compliance",
+        "JPMorgan COIN":                                          "esg-regulatory-compliance",
+        "Affinity AI":                                            "client-stakeholder-intelligence",
+        "Portrait Analytics":                                     "client-stakeholder-intelligence",
+        "AI @ Morgan Stanley Debrief":                            "client-stakeholder-intelligence",
+        "Morningstar 'Mo' / Intelligence Engine":                 "client-stakeholder-intelligence",
+        "StockSnips":                                             "client-stakeholder-intelligence",
+        "Atlas AI":                                               "client-stakeholder-intelligence",
+    }
+    for name, cat_id in AGENT_CATEGORY_SEED.items():
+        cursor.execute(
+            "UPDATE agents SET category_id = ? WHERE name = ? AND (category_id IS NULL OR category_id = '')",
+            (cat_id, name),
+        )
 
     # Rationale is stored as a JSON dict with keys:
     #   advantage, complexity, autonomy, agent_type, stages, general
@@ -1809,11 +1890,12 @@ def generate_database():
     timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
 
     for agent in agents_data_new:
+        cat_id = AGENT_CATEGORY_SEED.get(agent["name"])
         cursor.execute('''
             INSERT INTO agents (
                 name, url, description, rationale, key_features,
-                advantage, autonomy, agent_type, complexity, stages, status, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                advantage, autonomy, agent_type, complexity, stages, category_id, status, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             agent["name"],
             agent["url"],
@@ -1825,6 +1907,7 @@ def generate_database():
             agent["agent_type"],
             agent["complexity"],
             json.dumps(agent["stages"]),
+            cat_id,
             "classified",
             timestamp,
         ))

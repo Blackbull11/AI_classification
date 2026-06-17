@@ -408,7 +408,7 @@
 <!-- Scatter View -->
 <div id="scatterView" class="scatter-widget mb-4" style="display:none">
   <div class="scatter-legend">
-    <span class="legend-label">Bar fill (complexity):</span>
+    <span class="legend-label">Fill (complexity):</span>
     <span class="scatter-cx-item scatter-cx-black">Black Swan</span>
     <span class="scatter-cx-item scatter-cx-dark-grey">Dark Grey</span>
     <span class="scatter-cx-item scatter-cx-light-grey">Light Grey</span>
@@ -418,7 +418,12 @@
     <span class="legend-item legend-beh">Behavioral</span>
     <span class="legend-item legend-ana">Analytical</span>
     <span class="legend-item legend-inf">Informational</span>
-    <span class="scatter-hint">Higher = more autonomous · same stage pattern → one bar · click single bar to open profile · grouped bar → expand list</span>
+    <span class="legend-sep">·</span>
+    <span class="legend-label">Border style (type):</span>
+    <span class="scatter-type-item scatter-type-commercial">Commercial</span>
+    <span class="scatter-type-item scatter-type-inhouse">In-house</span>
+    <span class="scatter-type-item scatter-type-academic">Academic</span>
+    <span class="scatter-hint">Higher = more autonomous · same stage pattern → one bar · click bar to open profile or expand group</span>
   </div>
   <div id="scatterSvgContainer"></div>
   <div id="scatterDetailPanel" class="scatter-detail-panel mt-2" style="display:none">
@@ -773,16 +778,25 @@ if (quickAddForm) {
 
     // Enrich each slot with visual properties derived from its members
     const slots = [...slotMap.values()].map(s => {
-      const cxC={}, advC={};
-      s.members.forEach(a=>{cxC[a.complexity]=(cxC[a.complexity]||0)+1; advC[a.advantage]=(advC[a.advantage]||0)+1;});
-      const topCx  = Object.entries(cxC).sort((a,b)=>b[1]-a[1])[0]?.[0];
-      const topAdv = Object.entries(advC).sort((a,b)=>b[1]-a[1])[0]?.[0];
-      const fill   = Object.keys(cxC).length===1 ? (CX_FILL[topCx]||'#A09878') : '#B0A080';
-      const isDark = fill===CX_FILL['black']||fill===CX_FILL['dark-grey'];
-      const stroke = ADV_TEXT[topAdv] || '#8A7060';
-      const textCol= isDark ? (ADV_ON_DARK[topAdv]||'#E8E0D0') : (ADV_ON_LIGHT[topAdv]||'#3A2810');
-      const segs   = toSegments(s.covIdxs);
-      return {...s, fill, stroke, textCol, segs, minStage:s.covIdxs[0], maxStage:s.covIdxs[s.covIdxs.length-1]};
+      const cxC={}, advC={}, typeC={};
+      s.members.forEach(a=>{
+        cxC[a.complexity]=(cxC[a.complexity]||0)+1;
+        advC[a.advantage]=(advC[a.advantage]||0)+1;
+        typeC[a.agent_type]=(typeC[a.agent_type]||0)+1;
+      });
+      const topCx   = Object.entries(cxC).sort((a,b)=>b[1]-a[1])[0]?.[0];
+      const topAdv  = Object.entries(advC).sort((a,b)=>b[1]-a[1])[0]?.[0];
+      const topType = Object.entries(typeC).sort((a,b)=>b[1]-a[1])[0]?.[0];
+      // Always use dominant complexity fill — no more brownish mixed-fill fallback
+      const fill    = CX_FILL[topCx] || '#B0B0B0';
+      const isDark  = fill===CX_FILL['black']||fill===CX_FILL['dark-grey'];
+      const stroke  = ADV_TEXT[topAdv] || '#8A7060';
+      const textCol = isDark ? (ADV_ON_DARK[topAdv]||'#E8E0D0') : (ADV_ON_LIGHT[topAdv]||'#3A2810');
+      // Agent type → border dash pattern (solid=commercial, long-dash=in-house, dot=academic)
+      const mixedType = Object.keys(typeC).length > 1;
+      const strokeDash = mixedType ? '' : (topType==='in-house' ? '6,3' : topType==='academic' ? '2,3' : '');
+      const segs = toSegments(s.covIdxs);
+      return {...s, fill, stroke, textCol, strokeDash, segs, minStage:s.covIdxs[0], maxStage:s.covIdxs[s.covIdxs.length-1]};
     });
 
     // Group slots into autonomy bands (top = most autonomous)
@@ -888,7 +902,7 @@ if (quickAddForm) {
         const midBarY=barY+BAR_H/2;
 
         row.forEach(slot => {
-          const {covIdxs,segs,fill,stroke,textCol,members,minStage,maxStage}=slot;
+          const {covIdxs,segs,fill,stroke,textCol,strokeDash,members,minStage,maxStage}=slot;
           const n=members.length;
           const g=svgEl('g', {style:'cursor:pointer'});
 
@@ -900,12 +914,11 @@ if (quickAddForm) {
             }));
           }
 
-          // Solid filled bars
+          // Solid filled bars — stroke-dasharray encodes agent type
           segs.forEach(([s,e]) => {
-            g.appendChild(svgEl('rect', {
-              x:segL(s),y:barY, width:segR(e)-segL(s),height:BAR_H, rx:BAR_H/2,
-              fill, stroke,'stroke-width':'1.5',opacity:'0.93',
-            }));
+            const attrs={x:segL(s),y:barY, width:segR(e)-segL(s),height:BAR_H, rx:BAR_H/2, fill, stroke,'stroke-width':'1.5',opacity:'0.93'};
+            if (strokeDash) attrs['stroke-dasharray']=strokeDash;
+            g.appendChild(svgEl('rect', attrs));
           });
 
           // Label anchored to the widest segment (prevents floating labels over bridge gaps)

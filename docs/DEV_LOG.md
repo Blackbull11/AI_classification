@@ -29,6 +29,7 @@
 | Seed catalogue (40+ agents) | ✅ Complete | `build_agents_db.py` |
 | Reject / Restore / Delete | ✅ Complete | Status lifecycle management |
 | Agent Finder / Guide tab (`/guide`) | ✅ Complete | 4-step questionnaire, JS-filtered results |
+| Framework page (`/framework`) | ✅ Complete | Visual explainer of all 3 axes + supporting dimensions |
 | `full` autonomy tier | ✅ Complete | Pulsing crimson pip; applied to AIEQ (ID:1) + Numerai (ID:2) |
 | Autonomy Scatter Plot view | ✅ Complete | Toggle on matrix page; dots = agents, X=stage, Y=autonomy |
 
@@ -51,6 +52,49 @@
 
 ---
 
+### 2026-06-17 — Framework page content alignment with academic paper
+
+**Summary**: Applied four targeted content edits to `framework.html` to align it precisely with the source Panthera paper (Schuller, Wierckx, Kuhn & Zilic, 2025). No CSS, layout, or visual theme was altered.
+
+**Files changed**:
+- `templates/framework.html` — four modifications:
+  1. **Thesis grid**: replaced all four `.fw-thesis-card` headings and body text to match paper's exact problem framing (Inconsistent Taxonomy / Poor Strategic Deployment / Lack of Scalability & Interpretability / Regulatory & Ethical Ambiguity)
+  2. **Swan card descriptions**: tightened White/Light Grey/Dark Grey/Black Swan `fw-cat-desc` text to reflect paper's epistemological language (objective probability basis; substantial search; hypothetico-deductive model; mathematical formula critique)
+  3. **Informational Advantage**: extended description to note that barriers have "dropped dramatically due to web scraping, alternative data, and faster data feeds"
+  4. **Supporting Dimensions section**: renamed from "Autonomy & Agent Type" → "Autonomy & Evaluation Parameters"; updated subtitle to spectrum framing; deleted Agent Type column (Commercial / In-House / Academic) and replaced with four Evaluation Parameters cards (Learning Capability, Interaction Mode, Regulatory Compliance, Decision Function)
+
+**Design decisions**:
+- `col-md-7` / `col-md-5` grid preserved; only inner content of `col-md-5` was swapped
+- Autonomy's four cards (low/medium/high/full) left unchanged — spectrum framing achieved via subtitle rewrite
+
+**Open items**: none from this session
+
+---
+
+### 2026-06-17 — Agent Category Labels feature
+
+**Summary**: Added an 11-category labelling system ("Category Label") to group agents serving the same functional purpose, enabling a new filter in the Agent Finder and a category field in the wizard. The 11 categories span the investment AI taxonomy: Trading Engine → Execution Optimizer → Quant Alpha Platform → Stock Screener → Decision Copilot → Wealth Advisor → Research Assistant → Market Intelligence → Risk & AML Monitor → ESG & Compliance → Stakeholder Intelligence.
+
+**Files changed**:
+- `models.py` — added `category_id = db.Column(db.String(50))`
+- `app.py` — added `CATEGORIES` list (11 dicts with id/label/fullName/color), `CATEGORY_MAP`, `AGENT_CATEGORY_SEED` (67 name→category mappings), `_migrate_db()` for automatic column addition + backfill, updated `_wizard_context()` / `_save_step_to_draft()` / all 3 save routes / `edit_agent` / `classify_agent` / `agent_detail` / `guide` routes
+- `templates/wizard.html` — Step 1: category `<select>` dropdown (after description); Step 4: "Category" row in review summary table
+- `templates/guide.html` — Q5 filter block (11 chips + "Any"), JS: `selectedCat` state + `updateResults()` logic + category pill on result cards; `CAT_LABELS` JS dict from Jinja
+- `templates/agent_detail.html` — "Category Label" block in classification sidebar (colored text matching category hex)
+- `static/css/style.css` — `.guide-cat-chip.selected` (uses `--cat-chip-color` CSS custom property), `.guide-cat-label` for result cards
+- `build_agents_db.py` — `category_id TEXT` added to CREATE TABLE, runtime ALTER migration, `AGENT_CATEGORY_SEED` dict, category_id in INSERT for `agents_data_new`
+
+**Design decisions**:
+- Category kept as a **separate Q5 filter** (distinct from the 4 existing filters) with single-select chips per the existing chip system
+- Category chip colors use per-chip CSS custom property (`--cat-chip-color`) set via JS so each category gets its own distinct color without generating 11 CSS rules
+- Category label on result cards is rendered as a small all-caps muted text above the meta pills
+- Migration is safe to run repeatedly: ALTER is guarded by PRAGMA check, UPDATE only fills NULL/empty rows
+- 16 agents remain without category (general-purpose LLM suites like GS/JPM/Citi) — intentionally unassigned to avoid forcing a poor fit
+
+**Open items**: none from this session
+
+---
+
 ### 2026-06-16 — Agent detail page redesign
 
 **Summary**: Redesigned `agent_detail.html` for better information hierarchy and full-width usage. Replaced the plain 50/50 label-value classification card with a hero header, a wider description+features column (col-xl-7), and a sticky classification sidebar (col-xl-5) using large visual metric blocks per classification axis.
@@ -65,6 +109,25 @@
 - Autonomy and Agent Type condensed into a 2-column row of smaller meta blocks
 - Process stages rendered as colored pills (border + tint matching stage cube palette from matrix)
 - Features list uses `→` arrow prefix in accent color instead of default `<ul>` bullets
+
+**Open items**: none from this session
+
+---
+
+### 2026-06-17 — Framework page
+
+**Summary**: Added a standalone `/framework` page that visually explains the Panthera 3D classification system to someone who has never read the paper. Structured around 6 sections: problem/motivation, 3-axis overview with a mini interactive-style matrix diagram, Complexity Range (Swan tiers), Investment Process (7 stages), Comparative Advantage (3 types with durability bars), and Supporting Dimensions (Autonomy × Agent Type). Ends with a "how to read" guide and CTA links to the Matrix and Guide pages. Added "Framework" nav link to base navbar.
+
+**Files changed**:
+- `app.py` — added `/framework` route (static render, no DB queries)
+- `templates/base.html` — added Framework nav item
+- `templates/framework.html` — new page, ~400 lines, all styles inline in `<style>` block
+
+**Design decisions**:
+- All styles scoped locally inside the template (`<style>` block) to avoid polluting the global CSS with page-specific layout
+- Swan spectrum rendered with a color bar (risk → uncertainty) to make the axis intuitive at a glance
+- Advantage durability shown as a visual progress bar (informational=30%, analytical=60%, behavioral=100%)
+- Agent Type section uses border-style (solid/dashed/dotted) to mirror how they render in the scatter plot
 
 **Open items**: none from this session
 

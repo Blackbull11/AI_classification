@@ -50,6 +50,92 @@ ADVANTAGES = [
     ("informational", "Informational"),
 ]
 
+CATEGORIES = [
+    {"id": "autonomous-trading-engines",   "label": "Trading Engine",        "fullName": "Autonomous Trading Engines",                     "color": "#1A3A2A"},
+    {"id": "ai-execution-optimizers",      "label": "Execution Optimizer",   "fullName": "AI Execution Optimizers",                        "color": "#1E3A5F"},
+    {"id": "institutional-quant-alpha",    "label": "Quant Alpha Platform",  "fullName": "Institutional Quant Alpha Platforms",             "color": "#2D5016"},
+    {"id": "ai-stock-screeners",           "label": "Stock Screener",        "fullName": "AI Stock Screeners & Signal Rankers",             "color": "#4A7C59"},
+    {"id": "investment-decision-copilots", "label": "Decision Copilot",      "fullName": "Investment Decision Copilots",                    "color": "#7B3F00"},
+    {"id": "ai-wealth-portfolio-advisors", "label": "Wealth Advisor",        "fullName": "AI Wealth & Portfolio Advisors",                  "color": "#5C2D6E"},
+    {"id": "research-due-diligence",       "label": "Research Assistant",    "fullName": "Investment Research & Due Diligence Assistants",  "color": "#5C4A1E"},
+    {"id": "market-intelligence-aggregators", "label": "Market Intelligence","fullName": "Market Intelligence Aggregators",                 "color": "#1A4A5C"},
+    {"id": "risk-aml-surveillance",        "label": "Risk & AML Monitor",    "fullName": "Risk, AML & Surveillance Monitors",               "color": "#5C1A1A"},
+    {"id": "esg-regulatory-compliance",    "label": "ESG & Compliance",      "fullName": "ESG & Regulatory Compliance Platforms",           "color": "#2E5C3E"},
+    {"id": "client-stakeholder-intelligence", "label": "Stakeholder Intel",  "fullName": "Client & Stakeholder Intelligence",               "color": "#3D3D1A"},
+]
+CATEGORY_MAP = {c["id"]: c for c in CATEGORIES}
+
+# Maps exact agent DB names → category id for seeding/migration
+AGENT_CATEGORY_SEED = {
+    "AIEQ / EquBot":                                          "autonomous-trading-engines",
+    "Numerai (Meta Model)":                                   "autonomous-trading-engines",
+    "Academic Trading Agents (FinGPT / FinMem / TradingAgents)": "autonomous-trading-engines",
+    "FLAG-Trader":                                            "autonomous-trading-engines",
+    "FinRobot":                                               "autonomous-trading-engines",
+    "JPMorgan LOXM":                                          "ai-execution-optimizers",
+    "Shavandi & Khedmati Multi-Agent DRL":                    "ai-execution-optimizers",
+    "Aiden (VWAP & Arrival) — RBC Capital Markets":           "ai-execution-optimizers",
+    "Acuity (Acuity Trading)":                                "ai-execution-optimizers",
+    "QuantAgent":                                             "institutional-quant-alpha",
+    "JPMorgan IndexGPT":                                      "institutional-quant-alpha",
+    "BlackRock AlphaAgents":                                  "institutional-quant-alpha",
+    "Pluto.fi (Robinhood)":                                   "institutional-quant-alpha",
+    "Pluto (Robinhood)":                                      "institutional-quant-alpha",
+    "Axyon AI":                                               "institutional-quant-alpha",
+    "Neural Alpha":                                           "institutional-quant-alpha",
+    "Boosted.ai":                                             "institutional-quant-alpha",
+    "SigTech":                                                "institutional-quant-alpha",
+    "MDOTM (Sei)":                                            "institutional-quant-alpha",
+    "Kavout":                                                 "ai-stock-screeners",
+    "Auquan":                                                 "ai-stock-screeners",
+    "StockBench":                                             "ai-stock-screeners",
+    "Bridget / ThemeWise":                                    "ai-stock-screeners",
+    "Aiera":                                                  "ai-stock-screeners",
+    "InvestGPT (Kavout)":                                     "investment-decision-copilots",
+    "Finpilot":                                               "investment-decision-copilots",
+    "Investbanq Co-Pilot":                                    "investment-decision-copilots",
+    "Panthera Decision GPS":                                  "investment-decision-copilots",
+    "Vise AI":                                                "ai-wealth-portfolio-advisors",
+    "ARKEN Finance":                                          "ai-wealth-portfolio-advisors",
+    "Altruist AI Agents":                                     "ai-wealth-portfolio-advisors",
+    "Wokelo Agentic Builder":                                 "research-due-diligence",
+    "V7 Go (Due Diligence Agent)":                            "research-due-diligence",
+    "TOGGLE Copilot / Pro":                                   "research-due-diligence",
+    "Hebbia":                                                 "research-due-diligence",
+    "DiligenceSquared":                                       "research-due-diligence",
+    "EILLA AI":                                               "research-due-diligence",
+    "SmartKarma":                                             "research-due-diligence",
+    "Rogo":                                                   "research-due-diligence",
+    "Cognaize":                                               "research-due-diligence",
+    "Harmonic":                                               "research-due-diligence",
+    "RavenPack News Analytics / Bigdata.com":                 "market-intelligence-aggregators",
+    "Dataminr":                                               "market-intelligence-aggregators",
+    "AlphaSense":                                             "market-intelligence-aggregators",
+    "Bloomberg AI (BloombergGPT / ASKB)":                     "market-intelligence-aggregators",
+    "Needl":                                                  "market-intelligence-aggregators",
+    "Terminal X":                                             "market-intelligence-aggregators",
+    "Theia Insights":                                         "market-intelligence-aggregators",
+    "Ayasdi (SymphonyAI)":                                    "risk-aml-surveillance",
+    "NICE Actimize SURVEIL-X / Actimize Intelligence":        "risk-aml-surveillance",
+    "Holistic AI":                                            "risk-aml-surveillance",
+    "Behavox (Quantum / Polaris)":                            "risk-aml-surveillance",
+    "Hadrius":                                                "risk-aml-surveillance",
+    "Clarity AI":                                             "esg-regulatory-compliance",
+    "MSCI AI Portfolio Insights":                             "esg-regulatory-compliance",
+    "ShareWorks / Equity Edge MCP (Morgan Stanley)":          "esg-regulatory-compliance",
+    "Riskspan":                                               "esg-regulatory-compliance",
+    "YourStake":                                              "esg-regulatory-compliance",
+    "Norm AI":                                                "esg-regulatory-compliance",
+    "Arteria AI":                                             "esg-regulatory-compliance",
+    "JPMorgan COIN":                                          "esg-regulatory-compliance",
+    "Affinity AI":                                            "client-stakeholder-intelligence",
+    "Portrait Analytics":                                     "client-stakeholder-intelligence",
+    "AI @ Morgan Stanley Debrief":                            "client-stakeholder-intelligence",
+    "Morningstar 'Mo' / Intelligence Engine":                 "client-stakeholder-intelligence",
+    "StockSnips":                                             "client-stakeholder-intelligence",
+    "Atlas AI":                                               "client-stakeholder-intelligence",
+}
+
 
 @app.context_processor
 def inject_globals():
@@ -59,7 +145,7 @@ def inject_globals():
 
 # ─── Matrix ───────────────────────────────────────────────────────────────────
 
-@app.route("/")
+@app.route("/matrix")
 def matrix():
     classified = Agent.query.filter_by(status="classified").all()
 
@@ -230,6 +316,7 @@ def _wizard_context(mode, step, draft, agent=None):
         "stages": STAGES,
         "complexities": COMPLEXITIES,
         "advantages": ADVANTAGES,
+        "categories": CATEGORIES,
     }
 
 
@@ -269,6 +356,7 @@ def add_save():
         autonomy=draft.get("autonomy") or None,
         rationale=draft.get("rationale") or None,
         key_features=json.dumps([f for f in draft.get("features", []) if f.strip()]),
+        category_id=draft.get("category_id") or None,
         status="classified",
     )
     db.session.add(agent)
@@ -293,6 +381,7 @@ def edit_agent(agent_id):
         "rationale":     agent.rationale or "",
         "rationale_data": agent.rationale_dict,
         "features":      agent.features_list or [""],
+        "category_id":   agent.category_id or "",
     }
     session["wizard_draft"] = draft
     return render_template("wizard.html", **_wizard_context("edit", 1, draft, agent=agent))
@@ -325,6 +414,7 @@ def edit_save(agent_id):
     agent.autonomy    = draft.get("autonomy") or None
     agent.rationale   = draft.get("rationale") or None
     agent.key_features = json.dumps([f for f in draft.get("features", []) if f.strip()])
+    agent.category_id = draft.get("category_id") or None
     agent.status      = "classified"
     db.session.commit()
     session.pop("wizard_draft", None)
@@ -342,6 +432,7 @@ def agent_detail(agent_id):
         stage_map=dict(STAGES),
         complexity_labels=dict(COMPLEXITIES),
         advantage_labels=dict(ADVANTAGES),
+        category_map=CATEGORY_MAP,
         classified_count=classified_count,
     )
 
@@ -361,6 +452,7 @@ def classify_agent(agent_id):
         "rationale":     agent.rationale or "",
         "rationale_data": agent.rationale_dict,
         "features":      agent.features_list or [""],
+        "category_id":   agent.category_id or "",
     }
     session["wizard_draft"] = draft
     return render_template("wizard.html", **_wizard_context("classify", 1, draft, agent=agent))
@@ -393,6 +485,7 @@ def classify_save(agent_id):
     agent.autonomy     = draft.get("autonomy") or None
     agent.rationale    = draft.get("rationale") or None
     agent.key_features = json.dumps([f for f in draft.get("features", []) if f.strip()])
+    agent.category_id  = draft.get("category_id") or None
     agent.status       = "classified"
     db.session.commit()
     session.pop("wizard_draft", None)
@@ -482,6 +575,7 @@ def guide():
             "agent_type":  a.agent_type,
             "stages":      a.stages_list,
             "features":    a.features_list,
+            "category_id": a.category_id,
         }
         for a in classified
     ])
@@ -491,7 +585,16 @@ def guide():
         stages=STAGES,
         complexities=COMPLEXITIES,
         advantages=ADVANTAGES,
+        categories=CATEGORIES,
     )
+
+
+# ─── Framework ───────────────────────────────────────────────────────────────
+
+@app.route("/")
+@app.route("/framework")
+def framework():
+    return render_template("framework.html")
 
 
 # ─── API ─────────────────────────────────────────────────────────────────────
@@ -527,6 +630,7 @@ def _save_step_to_draft(draft, step, form):
         draft["url"]         = form.get("url", "").strip()
         draft["description"] = form.get("description", "").strip()
         draft["agent_type"]  = form.get("agent_type", "")
+        draft["category_id"] = form.get("category_id", "")
     elif step == 2:
         draft["stages"] = form.getlist("stages")
     elif step == 3:
@@ -551,8 +655,25 @@ def _save_step_to_draft(draft, step, form):
 
 # ─── Entry point ─────────────────────────────────────────────────────────────
 
+def _migrate_db():
+    """Add missing columns and back-fill category_id for known agents."""
+    from sqlalchemy import text
+    with db.engine.connect() as conn:
+        cols = [row[1] for row in conn.execute(text("PRAGMA table_info(agents)")).fetchall()]
+        if "category_id" not in cols:
+            conn.execute(text("ALTER TABLE agents ADD COLUMN category_id VARCHAR(50)"))
+            conn.commit()
+        for name, cat_id in AGENT_CATEGORY_SEED.items():
+            conn.execute(
+                text("UPDATE agents SET category_id = :cat WHERE name = :name AND (category_id IS NULL OR category_id = '')"),
+                {"cat": cat_id, "name": name},
+            )
+        conn.commit()
+
+
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
         seed_database(app, db, Agent)
+        _migrate_db()
     app.run(debug=True, port=5000)

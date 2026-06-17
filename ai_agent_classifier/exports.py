@@ -1,4 +1,5 @@
 import io
+import re
 from datetime import datetime
 
 from openpyxl import Workbook
@@ -381,6 +382,11 @@ def _sheet_summary(wb, agents):
 
 # ─── Word XML helpers ─────────────────────────────────────────────────────────
 
+def _bm_name(agent_id):
+    """Return a valid Word bookmark name for an agent id (letters, digits, underscores only)."""
+    return "agent_" + re.sub(r"[^A-Za-z0-9_]", "_", str(agent_id))
+
+
 def _set_paragraph_spacing(para, before=0, after=6):
     para.paragraph_format.space_before = Pt(before)
     para.paragraph_format.space_after  = Pt(after)
@@ -409,6 +415,45 @@ def _add_hyperlink(para, url, text):
     rPr.append(rs)
     run.append(rPr)
     t      = OxmlElement("w:t")
+    t.text = text
+    run.append(t)
+    hl.append(run)
+    para._p.append(hl)
+
+
+def _add_hyperlink_styled(para, url, text, color="1155CC", size=11, italic=False, bold=False):
+    """Hyperlink with full run-level formatting (size, italic, bold, color, underline)."""
+    part = para.part
+    r_id = part.relate_to(
+        url,
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink",
+        is_external=True,
+    )
+    hl = OxmlElement("w:hyperlink")
+    hl.set(qn("r:id"), r_id)
+    run = OxmlElement("w:r")
+    rPr = OxmlElement("w:rPr")
+    rf = OxmlElement("w:rFonts")
+    rf.set(qn("w:ascii"), "Calibri")
+    rf.set(qn("w:hAnsi"), "Calibri")
+    rPr.append(rf)
+    sz = OxmlElement("w:sz")
+    sz.set(qn("w:val"), str(int(size * 2)))
+    rPr.append(sz)
+    ce = OxmlElement("w:color")
+    ce.set(qn("w:val"), color)
+    rPr.append(ce)
+    u = OxmlElement("w:u")
+    u.set(qn("w:val"), "single")
+    rPr.append(u)
+    if italic:
+        rPr.append(OxmlElement("w:i"))
+        rPr.append(OxmlElement("w:iCs"))
+    if bold:
+        rPr.append(OxmlElement("w:b"))
+    run.append(rPr)
+    t = OxmlElement("w:t")
+    t.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
     t.text = text
     run.append(t)
     hl.append(run)
@@ -448,7 +493,12 @@ def _add_bookmark(para, name, bm_id):
     bm_start.set(qn("w:name"), name)
     bm_end = OxmlElement("w:bookmarkEnd")
     bm_end.set(qn("w:id"), str(bm_id))
-    para._p.insert(0, bm_start)
+    # w:pPr must stay first child of w:p — insert bookmarkStart after it
+    pPr = para._p.find(qn("w:pPr"))
+    if pPr is not None:
+        pPr.addnext(bm_start)
+    else:
+        para._p.insert(0, bm_start)
     para._p.append(bm_end)
 
 
@@ -776,7 +826,7 @@ def build_word(agents):
     sorted_agents = _sort_by_stage(agents)
     agent_numbers = {a.id: i + 1 for i, a in enumerate(sorted_agents)}
     stage_map     = dict(STAGES)
-    bm_counter    = [0]
+    bm_counter    = [1]
 
     # ── Cover page ────────────────────────────────────────────────────────────
 
@@ -800,14 +850,14 @@ def build_word(agents):
     _set_paragraph_spacing(sp, before=0, after=0)
 
     sp2 = doc.add_paragraph()
-    sr2 = sp2.add_run("Panthera's 3D classification framework")
-    sr2.font.size      = Pt(13)
-    sr2.font.italic    = True
-    sr2.font.underline = True
-    sr2.font.name      = "Calibri"
-    _set_run_color(sr2, "1155CC")
     sp2.alignment = WD_ALIGN_PARAGRAPH.CENTER
     _set_paragraph_spacing(sp2, before=0, after=10)
+    _add_hyperlink_styled(
+        sp2,
+        "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6290078",
+        "Panthera's 3D classification framework",
+        color="1155CC", size=13, italic=True,
+    )
 
     # Date
     dp = doc.add_paragraph()
@@ -832,26 +882,58 @@ def build_word(agents):
             grouped.setdefault(first, []).append(a)
 
     stages_present = [sk for sk in STAGE_KEYS if sk in grouped]
-    mid            = (len(stages_present) + 1) // 2
-    left_stages    = stages_present[:mid]
-    right_stages   = stages_present[mid:]
 
-    def _fill_toc_column(cell, stage_keys):
-        """Populate a TOC column cell with stage headings and agent entries."""
-        for s_idx, sk in enumerate(stage_keys):
-            # Stage heading
+    # Build a flat entry list so we can split at the true midpoint,
+    # even if that falls in the middle of a stage.
+    flat = []
+    for sk in stages_present:
+        flat.append(("h", sk, None))
+        for a in grouped[sk]:
+            flat.append(("a", sk, a))
+
+    # Find the stage-boundary index closest to the midpoint.
+    # Stage boundaries = positions where a heading starts (or the very end).
+    target       = len(flat) / 2
+    stage_bounds = [i for i in range(len(flat) + 1)
+                    if i == 0 or i == len(flat) or flat[i][0] == "h"]
+    best_bound   = min(stage_bounds, key=lambda b: abs(b - target))
+
+    # If the best boundary is too far from the midpoint (diff > 10 entries),
+    # allow splitting within the largest stage for better visual balance.
+    if abs(best_bound - target) > 10:
+        best_bound = round(target)
+
+    def _flat_to_pairs(entries):
+        """Convert flat entry list to [(stage_key, [agents])] groups."""
+        groups = []
+        for kind, sk, obj in entries:
+            if kind == "h":
+                groups.append([sk, []])
+            elif groups and groups[-1][0] == sk:
+                groups[-1][1].append(obj)
+            else:
+                groups.append([sk, [obj]])
+        return [(sk, ags) for sk, ags in groups if ags]
+
+    left_pairs  = _flat_to_pairs(flat[:best_bound])
+    right_pairs = _flat_to_pairs(flat[best_bound:])
+
+    def _fill_toc_column(cell, stage_agent_pairs):
+        first_group = True
+        for sk, agent_list in stage_agent_pairs:
             sp = cell.add_paragraph()
             sr = sp.add_run(f"{stage_map[sk]} :")
             sr.font.bold   = True
             sr.font.italic = True
             sr.font.name   = "Calibri"
             sr.font.size   = Pt(11)
-            sp.paragraph_format.space_before = Pt(8 if s_idx > 0 else 0)
+            sp.paragraph_format.space_before = Pt(0 if first_group else 8)
             sp.paragraph_format.space_after  = Pt(2)
+            first_group = False
 
-            for agent in grouped[sk]:
+            for agent in agent_list:
                 num = agent_numbers[agent.id]
-                bm  = f"agent_{agent.id}"
+                bm  = _bm_name(agent.id)
 
                 ep = cell.add_paragraph()
                 ep.paragraph_format.left_indent  = Cm(0.8)
@@ -864,21 +946,14 @@ def build_word(agents):
 
                 _add_internal_link(ep, bm, agent.name, size=10.5)
 
-                dot_run = ep.add_run("  " + "─" * 30 + "  p.")
-                dot_run.font.name      = "Calibri"
-                dot_run.font.size      = Pt(7)
-                dot_run.font.color.rgb = RGBColor(0xBB, 0xBB, 0xBB)
-
-                _add_pageref_field(ep, bm, color="444444", size=10)
-
     # 2-column TOC table (no borders, full width)
     toc_tbl = doc.add_table(rows=1, cols=2)
     toc_tbl.style = "Table Grid"
     _remove_table_borders(toc_tbl)
     _set_col_widths(toc_tbl, [4536, 4536])   # 8cm each = 16cm total
 
-    _fill_toc_column(toc_tbl.rows[0].cells[0], left_stages)
-    _fill_toc_column(toc_tbl.rows[0].cells[1], right_stages)
+    _fill_toc_column(toc_tbl.rows[0].cells[0], left_pairs)
+    _fill_toc_column(toc_tbl.rows[0].cells[1], right_pairs)
 
     doc.add_page_break()
 
@@ -888,16 +963,20 @@ def build_word(agents):
 
     for agent_idx, agent in enumerate(sorted_agents):
         num       = agent_numbers[agent.id]
-        bm        = f"agent_{agent.id}"
+        bm        = _bm_name(agent.id)
         adv_color = _advantage_solid(agent.advantage)
         cx_color  = COMPLEXITY_BADGE_BG.get(agent.complexity, "888888")
 
-        # Invisible bookmark paragraph (for PAGEREF to resolve)
-        bm_anchor = doc.add_paragraph()
-        _add_bookmark(bm_anchor, bm, bm_counter[0])
+        # Heading 1 as navigation anchor — text is 1 pt white so invisible in body
+        nav_para = doc.add_paragraph(style="Heading 1")
+        _add_bookmark(nav_para, bm, bm_counter[0])
         bm_counter[0] += 1
-        bm_anchor.paragraph_format.space_before = Pt(0)
-        bm_anchor.paragraph_format.space_after  = Pt(0)
+        nav_run = nav_para.add_run(f"{num}. {agent.name}")
+        nav_run.font.name      = "Calibri"
+        nav_run.font.size      = Pt(1)
+        nav_run.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+        nav_para.paragraph_format.space_before = Pt(0)
+        nav_para.paragraph_format.space_after  = Pt(0)
 
         # ── 4-col header: title | cx_badge | timeline | adv_badge ────────────
         _word_agent_header(doc, num, agent, adv_color, cx_color)
@@ -989,14 +1068,14 @@ def build_word(agents):
 
         _set_paragraph_spacing(doc.add_paragraph(), before=0, after=2)
 
-        # KEY FEATURES
-        h3_feat = doc.add_heading("KEY FEATURES", level=3)
-        for run in h3_feat.runs:
-            run.font.name = "Calibri"
-            run.font.size = Pt(10)
-            run.font.bold = True
-            _set_run_color(run, adv_color)
-        _set_paragraph_spacing(h3_feat, before=6, after=3)
+        # KEY FEATURES (plain paragraph — not a heading, so it stays out of the outline)
+        feat_head = doc.add_paragraph()
+        feat_run  = feat_head.add_run("KEY FEATURES")
+        feat_run.font.name = "Calibri"
+        feat_run.font.size = Pt(10)
+        feat_run.font.bold = True
+        _set_run_color(feat_run, adv_color)
+        _set_paragraph_spacing(feat_head, before=6, after=3)
 
         for feature in agent.features_list:
             fp = doc.add_paragraph(feature, style="List Bullet")
@@ -1147,10 +1226,11 @@ def _pdf_classification_table(agent, styles, cx_color, adv_color):
 
     def cls_cell(txt, color_hex=None):
         if color_hex:
-            return Paragraph(
-                f'<font color="#{color_hex}">■</font>  {txt}',
-                styles["tbl_cls"],
-            )
+            if color_hex == "FFFFFF":
+                sq = '<font color="#000000">□</font>'
+            else:
+                sq = f'<font color="#{color_hex}">■</font>'
+            return Paragraph(f'{sq}  {txt}', styles["tbl_cls"])
         return Paragraph(txt, styles["tbl_cls"])
 
     rd = agent.rationale_dict
@@ -1217,7 +1297,11 @@ def build_pdf(agents):
 
     story.append(Paragraph("AI Agents in Investment Management", gst["title"]))
     story.append(Paragraph("Multi-Dimensional Classification Report using", gst["subtitle1"]))
-    story.append(Paragraph("<u>Panthera's 3D classification framework</u>", gst["subtitle2"]))
+    story.append(Paragraph(
+        '<a href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6290078">'
+        "<u>Panthera's 3D classification framework</u></a>",
+        gst["subtitle2"],
+    ))
     story.append(Paragraph(datetime.utcnow().strftime("%d %B %Y"), gst["date"]))
     story.append(Spacer(1, 0.4 * cm))
     story.append(Paragraph("Agents list :", ParagraphStyle(
@@ -1233,32 +1317,46 @@ def build_pdf(agents):
             grouped.setdefault(first, []).append(a)
 
     stages_present = [sk for sk in STAGE_KEYS if sk in grouped]
-    mid            = (len(stages_present) + 1) // 2
-    left_stages    = stages_present[:mid]
-    right_stages   = stages_present[mid:]
 
-    def _toc_column_content(stage_keys):
+    # Flat-list balancing: same algorithm as Word export
+    flat_toc = []
+    for sk in stages_present:
+        flat_toc.append(("h", sk, None))
+        for a in grouped[sk]:
+            flat_toc.append(("a", sk, a))
+
+    target_toc = len(flat_toc) / 2
+    toc_bounds = [i for i in range(len(flat_toc) + 1)
+                  if i == 0 or i == len(flat_toc) or flat_toc[i][0] == "h"]
+    best_toc   = min(toc_bounds, key=lambda b: abs(b - target_toc))
+    if abs(best_toc - target_toc) > 10:
+        best_toc = round(target_toc)
+
+    def _build_pdf_toc_items(entries):
         items = []
-        for sk in stage_keys:
-            items.append(Paragraph(f"{stage_map[sk]} :", ParagraphStyle(
-                "ts", parent=gst["toc_stage"],
-                spaceBefore=8 if items else 0,
-            )))
-            for a in grouped[sk]:
-                num = agent_numbers[a.id]
+        first = True
+        for kind, sk, a in entries:
+            if kind == "h":
+                items.append(Paragraph(f"{stage_map[sk]} :", ParagraphStyle(
+                    f"toc_h_{sk}", parent=gst["toc_stage"],
+                    spaceBefore=0 if first else 8,
+                )))
+                first = False
+            else:
+                num_a = agent_numbers[a.id]
                 items.append(Paragraph(
-                    f'  {num}. <a href="#{a.id}" color="#1155CC"><u>{a.name}</u></a>',
+                    f'  {num_a}. <a href="#{a.id}" color="#1155CC"><u>{a.name}</u></a>',
                     gst["toc_entry"],
                 ))
         return items
 
-    left_items  = _toc_column_content(left_stages)
-    right_items = _toc_column_content(right_stages)
+    left_items  = _build_pdf_toc_items(flat_toc[:best_toc])
+    right_items = _build_pdf_toc_items(flat_toc[best_toc:])
     max_rows    = max(len(left_items), len(right_items))
     left_items  += [Paragraph("", gst["toc_entry"])] * (max_rows - len(left_items))
     right_items += [Paragraph("", gst["toc_entry"])] * (max_rows - len(right_items))
 
-    toc_data  = [[l, r] for l, r in zip(left_items, right_items)]
+    toc_data = [[l, r] for l, r in zip(left_items, right_items)]
     usable_w  = PAGE_W - 2 * MARGIN
     toc_table = Table(toc_data, colWidths=[usable_w / 2, usable_w / 2])
     toc_table.setStyle(TableStyle([
@@ -1275,12 +1373,13 @@ def build_pdf(agents):
 
     for agent_idx, agent in enumerate(sorted_agents):
         num       = agent_numbers[agent.id]
-        adv_color = _advantage_solid(agent.advantage)
-        cx_color  = COMPLEXITY_COLORS.get(agent.complexity, "888888")
-        cx_short  = COMPLEXITY_SHORT.get(agent.complexity, "")
-        adv_short = {"behavioral": "BEH", "analytical": "ANA",
-                     "informational": "INF"}.get(agent.advantage, "—")
-        st        = _pdf_styles(adv_color)
+        adv_color    = _advantage_solid(agent.advantage)
+        cx_bg_color  = COMPLEXITY_BADGE_BG.get(agent.complexity, "3D3D3D")
+        cx_short     = COMPLEXITY_SHORT.get(agent.complexity, "")
+        adv_short    = {"behavioral": "BEH", "analytical": "ANA",
+                        "informational": "INF"}.get(agent.advantage, "—")
+        st           = _pdf_styles(adv_color)
+        is_white_cx  = agent.complexity == "white"
 
         # Invisible anchor for TOC links
         story.append(Paragraph(f'<a name="{agent.id}"/>', ParagraphStyle(
@@ -1288,10 +1387,13 @@ def build_pdf(agents):
         )))
 
         # ── 4-column header table ─────────────────────────────────────────────
-        title_para    = Paragraph(f"{num}. {agent.name}", st["agent_label"])
-        cx_badge_para = Paragraph(cx_short, st["cx_badge"])
-        adv_badge_para= Paragraph(adv_short, st["adv_badge"])
-        timeline      = _TimelineFlowable(
+        title_para     = Paragraph(f"{num}. {agent.name}", st["agent_label"])
+        cx_text_color  = black if is_white_cx else white
+        cx_badge_para  = Paragraph(cx_short, ParagraphStyle(
+            "cx_b", parent=st["cx_badge"], textColor=cx_text_color,
+        ))
+        adv_badge_para = Paragraph(adv_short, st["adv_badge"])
+        timeline       = _TimelineFlowable(
             STAGES, agent.stages_list, "9D7D6F",
             width=5.5 * cm, height=1.1 * cm,
         )
@@ -1302,9 +1404,9 @@ def build_pdf(agents):
             colWidths=[6.5 * cm, 2.3 * cm, 5.5 * cm, 1.7 * cm],
             rowHeights=[1.4 * cm],
         )
-        hdr_table.setStyle(TableStyle([
+        hdr_cmds = [
             ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
-            ("BACKGROUND",    (1, 0), (1, 0),   _hex("3D3D3D")),
+            ("BACKGROUND",    (1, 0), (1, 0),   _hex(cx_bg_color)),
             ("BACKGROUND",    (3, 0), (3, 0),   _hex(adv_color)),
             ("ROUNDEDCORNERS",(1, 0), (1, 0),   [3, 3, 3, 3]),
             ("ROUNDEDCORNERS",(3, 0), (3, 0),   [3, 3, 3, 3]),
@@ -1312,7 +1414,10 @@ def build_pdf(agents):
             ("RIGHTPADDING",  (0, 0), (-1, -1), 6),
             ("TOPPADDING",    (0, 0), (-1, -1), 4),
             ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-        ]))
+        ]
+        if is_white_cx:
+            hdr_cmds.append(("BOX", (1, 0), (1, 0), 1, black))
+        hdr_table.setStyle(TableStyle(hdr_cmds))
         story.append(hdr_table)
         story.append(Spacer(1, 0.2 * cm))
 
@@ -1328,7 +1433,7 @@ def build_pdf(agents):
             story.append(Paragraph(agent.description, st["desc"]))
 
         # Classification table
-        story.append(_pdf_classification_table(agent, st, cx_color, adv_color))
+        story.append(_pdf_classification_table(agent, st, cx_bg_color, adv_color))
         story.append(Spacer(1, 0.25 * cm))
 
         # KEY FEATURES

@@ -1,0 +1,911 @@
+{% extends "base.html" %}
+{% block title %}Framework — AI Agent Classifier{% endblock %}
+
+{% block content %}
+<style>
+/* ── Framework page local styles ──────────────────────────────────────── */
+
+/* CTA button */
+@keyframes fw-glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(var(--accent-rgb, 100,160,255), 0.5); }
+  50%       { box-shadow: 0 0 0 10px rgba(var(--accent-rgb, 100,160,255), 0); }
+}
+@keyframes fw-arrow-bounce {
+  0%, 100% { transform: translateX(0); }
+  50%       { transform: translateX(6px); }
+}
+@keyframes fw-arrow-appear {
+  0%   { opacity: 0; transform: translateX(-8px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+.fw-cta-wrap {
+  margin-top: 40px;
+  padding: 36px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-surface);
+  text-align: center;
+}
+.fw-cta-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+.fw-cta-heading {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+.fw-cta-sub {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+.fw-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 28px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  text-decoration: none;
+  animation: fw-glow-pulse 2s ease-in-out infinite;
+  transition: background 0.15s;
+}
+.fw-cta-btn:hover {
+  color: #fff;
+  background: var(--accent);
+  filter: brightness(1.15);
+}
+.fw-cta-arrow {
+  display: inline-block;
+  animation: fw-arrow-bounce 1s ease-in-out infinite;
+}
+.fw-cta-btn:hover .fw-cta-arrow {
+  animation: fw-arrow-appear 0.25s ease forwards,
+             fw-arrow-bounce 1s ease-in-out 0.25s infinite;
+}
+.fw-cta-secondary {
+  display: inline-block;
+  margin-top: 16px;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-decoration: none;
+}
+.fw-cta-secondary:hover { color: var(--text-secondary); text-decoration: underline; }
+.fw-hero {
+  padding: 40px 0 32px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 40px;
+}
+.fw-hero-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+.fw-hero-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.25;
+  margin-bottom: 16px;
+}
+.fw-hero-title em {
+  font-style: normal;
+  color: var(--accent);
+}
+.fw-hero-body {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  max-width: 720px;
+}
+.fw-cite {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 16px;
+}
+.fw-cite a { color: var(--accent); text-decoration: none; }
+.fw-cite a:hover { text-decoration: underline; }
+
+/* ── Problem / thesis pills ──────────────────────────────────────────── */
+.fw-thesis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 48px;
+}
+.fw-thesis-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 20px;
+}
+.fw-thesis-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+}
+.fw-thesis-card h6 {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.fw-thesis-card p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* ── Section headers ─────────────────────────────────────────────────── */
+.fw-section {
+  margin-bottom: 52px;
+}
+.fw-section-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.fw-section-tag .tag-num {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.fw-section-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+.fw-section-sub {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+  max-width: 680px;
+  line-height: 1.6;
+}
+
+/* ── 3D cube diagram ─────────────────────────────────────────────────── */
+.fw-cube-wrap {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px;
+  margin-bottom: 48px;
+  text-align: center;
+}
+.fw-cube-diagram {
+  display: inline-grid;
+  grid-template-columns: 120px 1fr;
+  grid-template-rows: auto auto;
+  gap: 0;
+  position: relative;
+}
+.fw-axis-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.fw-dim-strip {
+  display: flex;
+  gap: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  height: 32px;
+  margin-bottom: 2px;
+}
+.fw-dim-cell {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.fw-cube-caption {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 16px;
+}
+.fw-cube-caption strong { color: var(--text-secondary); }
+
+/* ── Dimension axes overview ─────────────────────────────────────────── */
+.fw-axes-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 48px;
+}
+@media (max-width: 767px) { .fw-axes-row { grid-template-columns: 1fr; } }
+.fw-axis-card {
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid var(--border);
+}
+.fw-axis-card.axis-x { background: linear-gradient(135deg, #0D1A26 0%, #111D1A 100%); border-color: #2A4A3A; }
+.fw-axis-card.axis-y { background: linear-gradient(135deg, #1A1018 0%, #1A1010 100%); border-color: #3A2028; }
+.fw-axis-card.axis-z { background: linear-gradient(135deg, #151218 0%, #181510 100%); border-color: #382A18; }
+.fw-axis-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+.axis-x .fw-axis-badge { background: rgba(29,184,122,0.15); color: #1DB87A; }
+.axis-y .fw-axis-badge { background: rgba(196,72,72,0.15); color: #E08080; }
+.axis-z .fw-axis-badge { background: rgba(196,132,90,0.15); color: var(--accent); }
+.fw-axis-card h5 {
+  font-size: 15px;
+  font-weight: 800;
+  margin-bottom: 6px;
+  color: var(--text-primary);
+}
+.fw-axis-card p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── Category cards ──────────────────────────────────────────────────── */
+.fw-cat-grid {
+  display: grid;
+  gap: 12px;
+}
+.fw-cat-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+.fw-cat-grid.cols-7 { grid-template-columns: repeat(7, 1fr); }
+.fw-cat-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.fw-cat-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 1100px) { .fw-cat-grid.cols-7 { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 900px)  { .fw-cat-grid.cols-4 { grid-template-columns: repeat(2, 1fr); } .fw-cat-grid.cols-3 { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px)  { .fw-cat-grid.cols-7, .fw-cat-grid.cols-4, .fw-cat-grid.cols-3, .fw-cat-grid.cols-2 { grid-template-columns: 1fr; } }
+
+.fw-cat {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+}
+.fw-cat::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+}
+.fw-cat-icon {
+  font-size: 20px;
+  margin-bottom: 8px;
+  display: block;
+}
+.fw-cat-name {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  letter-spacing: 0.02em;
+}
+.fw-cat-tag {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+  display: block;
+}
+.fw-cat-desc {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin: 0;
+}
+.fw-cat-example {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  margin-top: 8px;
+  font-style: italic;
+}
+
+/* Swan tier colors */
+.fw-cat.swan-black  { background: #181010; border-color: #3A2020; }
+.fw-cat.swan-black::before  { background: #E87070; }
+.fw-cat.swan-dg     { background: #141210; border-color: #2E2A1E; }
+.fw-cat.swan-dg::before     { background: #A0A0A0; }
+.fw-cat.swan-lg     { background: #10141C; border-color: #1E2030; }
+.fw-cat.swan-lg::before     { background: #8090C0; }
+.fw-cat.swan-white  { background: #0E1410; border-color: #1E2E20; }
+.fw-cat.swan-white::before  { background: #90C890; }
+
+/* Advantage colors */
+.fw-cat.adv-beh  { border-color: #3A2010; }
+.fw-cat.adv-beh::before  { background: var(--beh); }
+.fw-cat.adv-ana  { border-color: #0E2A1A; }
+.fw-cat.adv-ana::before  { background: var(--ana); }
+.fw-cat.adv-inf  { border-color: #2A2008; }
+.fw-cat.adv-inf::before  { background: var(--inf); }
+
+/* Stage colors */
+.fw-cat.stage-ig  { border-color: #1A2A14; } .fw-cat.stage-ig::before  { background: #4A7A3A; }
+.fw-cat.stage-ia  { border-color: #2A2408; } .fw-cat.stage-ia::before  { background: #C8A828; }
+.fw-cat.stage-dp  { border-color: #1A1E30; } .fw-cat.stage-dp::before  { background: #6478C0; }
+.fw-cat.stage-ex  { border-color: #2A1C08; } .fw-cat.stage-ex::before  { background: #CC7830; }
+.fw-cat.stage-mo  { border-color: #221228; } .fw-cat.stage-mo::before  { background: #9868A8; }
+.fw-cat.stage-co  { border-color: #0E2020; } .fw-cat.stage-co::before  { background: #3A9888; }
+.fw-cat.stage-sm  { border-color: #2A1010; } .fw-cat.stage-sm::before  { background: #C04848; }
+
+/* Autonomy colors */
+.fw-cat.auto-low  { } .fw-cat.auto-low::before  { background: #3A9888; }
+.fw-cat.auto-med  { } .fw-cat.auto-med::before  { background: #6478C0; }
+.fw-cat.auto-hi   { } .fw-cat.auto-hi::before   { background: #9868A8; }
+.fw-cat.auto-full { border-color: #3A1010; } .fw-cat.auto-full::before { background: #C04848; }
+
+/* ── How-to-read section ─────────────────────────────────────────────── */
+.fw-read-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+.fw-read-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+}
+.fw-read-num {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 10px;
+}
+.fw-read-card h6 {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 5px;
+}
+.fw-read-card p {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.55;
+}
+
+/* ── Complexity spectrum bar ─────────────────────────────────────────── */
+.fw-spectrum {
+  display: flex;
+  border-radius: 8px;
+  overflow: hidden;
+  height: 10px;
+  margin-bottom: 20px;
+}
+.fw-spectrum-seg { flex: 1; }
+
+/* ── Divider ─────────────────────────────────────────────────────────── */
+.fw-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 48px 0;
+}
+</style>
+
+<!-- ── Hero ──────────────────────────────────────────────────────────────── -->
+<div class="fw-hero">
+  <div class="fw-hero-label">Research Framework</div>
+  <h1 class="fw-hero-title">
+    A <em>3-Dimensional</em> Classification System<br>for AI Agents in the Investment Industry
+  </h1>
+  <p class="fw-hero-body">
+    Financial markets are complex adaptive systems — and AI tools are proliferating faster than the vocabulary to describe them.
+    This framework gives investment managers, developers, and regulators a shared language to evaluate any AI agent
+    across three structural dimensions: <strong>what environment it operates in</strong>,
+    <strong>where it sits in the investment process</strong>, and <strong>what competitive edge it enables</strong>.
+  </p>
+  <p class="fw-cite">
+    Based on
+    <a href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6290078" target="_blank" rel="noopener">
+      Schuller, Wierckx, Kuhn &amp; Zilic — <em>A Multi-Dimensional Classification System For AI Agents In The Investment Industry</em> (2025)
+    </a>
+  </p>
+</div>
+
+<!-- ── Why this framework ─────────────────────────────────────────────────── -->
+<div class="fw-section">
+  <div class="fw-section-tag"><span class="tag-num">0</span> The Problem</div>
+  <h2 class="fw-section-title">Why a classification system?</h2>
+  <p class="fw-section-sub">
+    Without a shared taxonomy, investment firms risk deploying the wrong AI tool for the wrong context —
+    over-automating decisions that require human judgment, or under-utilizing AI where it could create durable edge.
+    Three root problems motivate this work:
+  </p>
+  <div class="fw-thesis-grid">
+    <div class="fw-thesis-card">
+      <div class="fw-thesis-icon">🗺️</div>
+      <h6>Inconsistent Taxonomy</h6>
+      <p>There remains no consistent way to compare or categorize the roles, capabilities, and strategic potential of AI tools as they are progressively integrated into investment workflows.</p>
+    </div>
+    <div class="fw-thesis-card">
+      <div class="fw-thesis-icon">📉</div>
+      <h6>Poor Strategic Deployment</h6>
+      <p>Firms lack the knowledge to use AI strategically to create business value, optimize decisions, and maximize the asymmetry between risk and return.</p>
+    </div>
+    <div class="fw-thesis-card">
+      <div class="fw-thesis-icon">🧠</div>
+      <h6>Lack of Scalability &amp; Interpretability</h6>
+      <p>Addressing ethical implications requires Explainable AI (XAI) to demystify "black-box" models, foster transparency, and build trust in the investment process.</p>
+    </div>
+    <div class="fw-thesis-card">
+      <div class="fw-thesis-icon">⚖️</div>
+      <h6>Regulatory &amp; Ethical Ambiguity</h6>
+      <p>The industry lacks robust governance frameworks to effectively address algorithmic bias, operationalize AI ethics, and ensure responsible integration.</p>
+    </div>
+  </div>
+</div>
+
+<hr class="fw-divider">
+
+<!-- ── The three dimensions overview ─────────────────────────────────────── -->
+<div class="fw-section">
+  <div class="fw-section-tag"><span class="tag-num">1</span> The Framework</div>
+  <h2 class="fw-section-title">Three axes. One coordinate system.</h2>
+  <p class="fw-section-sub">
+    Every AI agent in the investment industry can be located in a three-dimensional space.
+    Together, these dimensions define not just what an agent does — but whether it belongs there.
+  </p>
+
+  <div class="fw-axes-row">
+    <div class="fw-axis-card axis-y">
+      <div class="fw-axis-badge">Axis Y — Exogenous</div>
+      <h5>Market Complexity</h5>
+      <p>How predictable is the environment in which this agent operates? Ranges from fully quantifiable risk to genuine unknown unknowns — and the right AI approach is radically different at each level.</p>
+    </div>
+    <div class="fw-axis-card axis-x">
+      <div class="fw-axis-badge">Axis X — Endogenous</div>
+      <h5>Investment Process Stage</h5>
+      <p>Where in the investment value chain does this agent contribute? From originating ideas to reporting outcomes to stakeholders, each stage has distinct information needs and decision stakes.</p>
+    </div>
+    <div class="fw-axis-card axis-z">
+      <div class="fw-axis-badge">Axis Z — Bridge</div>
+      <h5>Comparative Advantage</h5>
+      <p>What type of edge does this agent help create or protect? Informational, analytical, and behavioral advantages differ in durability and in how vulnerable they are to erosion over time.</p>
+    </div>
+  </div>
+
+  <!-- Visual matrix diagram -->
+  <div class="fw-cube-wrap">
+    <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:16px;">
+      Framework Overview — each cell is a classification coordinate
+    </div>
+    <!-- Complexity rows × Stage columns mini-grid -->
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;min-width:600px;">
+        <thead>
+          <tr>
+            <th style="width:130px;padding:4px 8px;text-align:left;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">Complexity ↓ / Stage →</th>
+            <th style="padding:4px 6px;text-align:center;font-size:9.5px;font-weight:700;color:#4A7A3A">Idea Gen.</th>
+            <th style="padding:4px 6px;text-align:center;font-size:9.5px;font-weight:700;color:#C8A828">Idea Assess.</th>
+            <th style="padding:4px 6px;text-align:center;font-size:9.5px;font-weight:700;color:#6478C0">Decision</th>
+            <th style="padding:4px 6px;text-align:center;font-size:9.5px;font-weight:700;color:#CC7830">Execution</th>
+            <th style="padding:4px 6px;text-align:center;font-size:9.5px;font-weight:700;color:#9868A8">Monitoring</th>
+            <th style="padding:4px 6px;text-align:center;font-size:9.5px;font-weight:700;color:#3A9888">Compliance</th>
+            <th style="padding:4px 6px;text-align:center;font-size:9.5px;font-weight:700;color:#C04848">Stakeholder</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set rows = [
+            ('Black Swan',      '#E87070', '#1E1010', 'Unknown unknowns — logic &amp; heuristics'),
+            ('Dark Grey Swan',  '#A0A0A0', '#181610', 'Scarce info — causal reasoning'),
+            ('Light Grey Swan', '#8090C0', '#101420', 'Noisy data — optimization heuristics'),
+            ('White Swan',      '#90C890', '#0E1610', 'Known risk — probabilistic models'),
+          ] %}
+          {% for label, color, bg, hint in rows %}
+          <tr>
+            <td style="padding:6px 8px;background:{{ bg }};border-radius:4px 0 0 4px;">
+              <div style="font-size:10px;font-weight:700;color:{{ color }}">{{ label }}</div>
+              <div style="font-size:9px;color:var(--text-muted)">{{ hint }}</div>
+            </td>
+            {% for _ in range(7) %}
+            <td style="padding:5px 4px;text-align:center;">
+              <div style="width:100%;height:26px;border-radius:5px;background:{{ bg }};border:1px solid {{ color }}22;display:flex;align-items:center;justify-content:center;">
+                <div style="width:32px;height:6px;border-radius:3px;background:{{ color }}55;"></div>
+              </div>
+            </td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:16px;">
+      <span style="font-size:10px;color:var(--text-muted)">Cell color = <strong style="color:var(--text-secondary)">complexity tier</strong></span>
+      <span style="font-size:10px;color:var(--text-muted)">·</span>
+      <span style="font-size:10px;color:var(--text-muted)">Badge border = <strong style="color:var(--beh)">behavioral</strong> / <strong style="color:var(--ana)">analytical</strong> / <strong style="color:var(--inf)">informational</strong></span>
+      <span style="font-size:10px;color:var(--text-muted)">·</span>
+      <span style="font-size:10px;color:var(--text-muted)">Pip = <strong style="color:var(--text-secondary)">autonomy level</strong></span>
+    </div>
+  </div>
+</div>
+
+<hr class="fw-divider">
+
+<!-- ── Dimension 1: Complexity Range ─────────────────────────────────────── -->
+<div class="fw-section">
+  <div class="fw-section-tag"><span class="tag-num">2</span> Axis Y — Market Complexity</div>
+  <h2 class="fw-section-title">The Swan Spectrum: from risk to radical uncertainty</h2>
+  <p class="fw-section-sub">
+    Drawing on Knight (1921), Taleb (2012), and Gigerenzer (2001), the framework maps market environments
+    onto four complexity tiers. The critical insight: as uncertainty increases, simpler AI approaches
+    outperform optimized ones. Fitting a sophisticated model to a Black Swan environment is not just ineffective
+    — it is epistemologically wrong.
+  </p>
+
+  <!-- Spectrum bar -->
+  <div style="margin-bottom:8px;display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);">
+    <span>← Risk (quantifiable)</span>
+    <span>Uncertainty (irreducible) →</span>
+  </div>
+  <div class="fw-spectrum" style="margin-bottom:32px;">
+    <div class="fw-spectrum-seg" style="background:#4A7A3A;opacity:0.7"></div>
+    <div class="fw-spectrum-seg" style="background:#8090C0;opacity:0.7"></div>
+    <div class="fw-spectrum-seg" style="background:#A0A0A0;opacity:0.7"></div>
+    <div class="fw-spectrum-seg" style="background:#E87070;opacity:0.7"></div>
+  </div>
+
+  <div class="fw-cat-grid cols-4">
+
+    <div class="fw-cat swan-white">
+      <span class="fw-cat-icon">🦢</span>
+      <div class="fw-cat-name">White Swan</div>
+      <span class="fw-cat-tag" style="color:#90C890">Known knowns · Measurable risk</span>
+      <p class="fw-cat-desc">
+        Options and probabilities are known — there is an objective basis for deriving outcome probabilities.
+        Statistical algorithms and probabilistic models are appropriate.
+        Research consistently shows they outperform human experts in this regime.
+      </p>
+      <p class="fw-cat-example">E.g. Options pricing, index replication, execution algorithms, compliance rule-checking.</p>
+    </div>
+
+    <div class="fw-cat swan-lg">
+      <span class="fw-cat-icon">🩶</span>
+      <div class="fw-cat-name">Light Grey Swan</div>
+      <span class="fw-cat-tag" style="color:#8090C0">Known unknowns · Noisy search</span>
+      <p class="fw-cat-desc">
+        The probability distribution is theoretically known but hard to estimate due to data noise.
+        Many options are presented as available, requiring substantial search across a noisy solution space.
+        Optimization heuristics — simplified models that drop intractable constraints — are preferred.
+      </p>
+      <p class="fw-cat-example">E.g. Factor models, portfolio optimization, NLP-based screening of large document sets.</p>
+    </div>
+
+    <div class="fw-cat swan-dg">
+      <span class="fw-cat-icon">🌫️</span>
+      <div class="fw-cat-name">Dark Grey Swan</div>
+      <span class="fw-cat-tag" style="color:#A0A0A0">Known unknowns · Scarce data</span>
+      <p class="fw-cat-desc">
+        Little information is available. Getting the right causal direction matters more than the weights.
+        The appropriate method is a hypothetico-deductive model based on logic, complemented by
+        scenario analysis and Bayesian updating as new evidence emerges.
+      </p>
+      <p class="fw-cat-example">E.g. Macro regime analysis, geopolitical risk models, early-stage credit assessment.</p>
+    </div>
+
+    <div class="fw-cat swan-black">
+      <span class="fw-cat-icon">🖤</span>
+      <div class="fw-cat-name">Black Swan</div>
+      <span class="fw-cat-tag" style="color:#E87070">Unknown unknowns · Irreducible</span>
+      <p class="fw-cat-desc">
+        The odds of rare events are not computable. Robustness beats optimality.
+        Outsourcing responsibilities to a mathematical formula is not only ethically wrong, but also
+        epistemologically flawed. Simple heuristics and human judgment must complement or replace models.
+      </p>
+      <p class="fw-cat-example">E.g. Tail-risk stress testing, crisis response, liquidity freeze scenarios.</p>
+    </div>
+
+  </div>
+
+  <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:14px 18px;margin-top:16px;font-size:12px;color:var(--text-secondary);line-height:1.6;">
+    <strong style="color:var(--accent)">Key implication:</strong>
+    AI tools appropriate for White Swan environments (statistical optimization) become actively dangerous in Black Swan contexts.
+    The framework forces explicit acknowledgment of which regime an agent is deployed into.
+  </div>
+</div>
+
+<hr class="fw-divider">
+
+<!-- ── Dimension 2: Investment Process ───────────────────────────────────── -->
+<div class="fw-section">
+  <div class="fw-section-tag"><span class="tag-num">3</span> Axis X — Investment Process Value Chain</div>
+  <h2 class="fw-section-title">The 7 stages of the investment process</h2>
+  <p class="fw-section-sub">
+    Although investment strategies differ widely, the process follows a consistent sequence across firms.
+    Each stage has distinct information needs, human-AI interaction patterns, and regulatory exposure.
+    An AI agent may contribute to one or several stages — and its appropriateness differs at each.
+  </p>
+
+  <div class="fw-cat-grid cols-7">
+
+    <div class="fw-cat stage-ig">
+      <span class="fw-cat-icon">💡</span>
+      <div class="fw-cat-name">Idea Generation</div>
+      <span class="fw-cat-tag" style="color:#4A7A3A">Stage 1</span>
+      <p class="fw-cat-desc">Identifying investment opportunities. Top-down screening or bottom-up discovery. AI can expand the universe searched and surface non-obvious signals.</p>
+    </div>
+
+    <div class="fw-cat stage-ia">
+      <span class="fw-cat-icon">🔬</span>
+      <div class="fw-cat-name">Idea Assessment</div>
+      <span class="fw-cat-tag" style="color:#C8A828">Stage 2</span>
+      <p class="fw-cat-desc">Evaluating opportunities on risk-return merit against portfolio constraints. AI supports deeper, faster fundamental and quantitative analysis.</p>
+    </div>
+
+    <div class="fw-cat stage-dp">
+      <span class="fw-cat-icon">⚡</span>
+      <div class="fw-cat-name">Decision Point</div>
+      <span class="fw-cat-tag" style="color:#6478C0">Stage 3</span>
+      <p class="fw-cat-desc">Formal capital commitment. The highest-stakes stage. AI should support — not replace — human judgment, particularly in uncertain environments.</p>
+    </div>
+
+    <div class="fw-cat stage-ex">
+      <span class="fw-cat-icon">🚀</span>
+      <div class="fw-cat-name">Execution</div>
+      <span class="fw-cat-tag" style="color:#CC7830">Stage 4</span>
+      <p class="fw-cat-desc">Trading to establish positions. AI optimizes across venues, minimizes market impact, and manages execution risk through algorithmic strategies.</p>
+    </div>
+
+    <div class="fw-cat stage-mo">
+      <span class="fw-cat-icon">📡</span>
+      <div class="fw-cat-name">Monitoring</div>
+      <span class="fw-cat-tag" style="color:#9868A8">Stage 5</span>
+      <p class="fw-cat-desc">Continuous assessment of position alignment with objectives. AI tracks drift, detects thesis-breaking signals, and flags rebalancing needs.</p>
+    </div>
+
+    <div class="fw-cat stage-co">
+      <span class="fw-cat-icon">🛡️</span>
+      <div class="fw-cat-name">Compliance</div>
+      <span class="fw-cat-tag" style="color:#3A9888">Stage 6</span>
+      <p class="fw-cat-desc">Ensuring regulatory and mandate adherence throughout the lifecycle. AI automates rule-checking, audit trail generation, and regulatory reporting.</p>
+    </div>
+
+    <div class="fw-cat stage-sm">
+      <span class="fw-cat-icon">🤝</span>
+      <div class="fw-cat-name">Stakeholder Mgmt</div>
+      <span class="fw-cat-tag" style="color:#C04848">Stage 7</span>
+      <p class="fw-cat-desc">Communicating rationale and performance to clients. AI generates explainable narratives, personalized reports, and risk summaries at scale.</p>
+    </div>
+
+  </div>
+
+  <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:14px 18px;margin-top:16px;font-size:12px;color:var(--text-secondary);line-height:1.6;">
+    <strong style="color:var(--accent)">Key implication:</strong>
+    AI impact is not uniform across stages. Execution and Compliance are high-AI-fit (White Swan, deterministic rules).
+    The Decision Point demands the most caution — autonomy here depends critically on the complexity tier.
+  </div>
+</div>
+
+<hr class="fw-divider">
+
+<!-- ── Dimension 3: Comparative Advantage ────────────────────────────────── -->
+<div class="fw-section">
+  <div class="fw-section-tag"><span class="tag-num">4</span> Axis Z — Comparative Advantage</div>
+  <h2 class="fw-section-title">Three types of edge — and their durability</h2>
+  <p class="fw-section-sub">
+    Sustained investment outperformance requires a durable advantage over equally skilled competitors.
+    Drawing on Fuller (1998) and the CAB framework (Wierckx, 2021), the taxonomy identifies three types
+    that differ fundamentally in how quickly AI erodes or amplifies them.
+  </p>
+
+  <div class="fw-cat-grid cols-3">
+
+    <div class="fw-cat adv-inf">
+      <span class="fw-cat-icon">📊</span>
+      <div class="fw-cat-name">Informational Advantage</div>
+      <span class="fw-cat-tag" style="color:var(--inf)">Durability: Low · Erosion: Fast</span>
+      <p class="fw-cat-desc">
+        Possessing material knowledge not yet reflected in prices — earlier news access, proprietary datasets, alternative data.
+        Barriers to acquiring this advantage have dropped dramatically due to web scraping, alternative data, and faster data feeds,
+        making informational edges commoditize rapidly.
+        Once information is disseminated, the advantage vanishes.
+      </p>
+      <p class="fw-cat-example"><strong style="color:var(--inf)">AI role:</strong> Web scraping, news sentiment, earnings transcripts NLP, satellite data processing.</p>
+    </div>
+
+    <div class="fw-cat adv-ana">
+      <span class="fw-cat-icon">🧠</span>
+      <div class="fw-cat-name">Analytical Advantage</div>
+      <span class="fw-cat-tag" style="color:var(--ana)">Durability: Medium · Erosion: Gradual</span>
+      <p class="fw-cat-desc">
+        Superior synthesis of complex or fragmented public information — better models, deeper research, sharper inference.
+        Requires significant intellectual capital and creates meaningful barriers to entry. However, as LLMs and ML
+        improve, the analytical moat is narrowing across the industry.
+      </p>
+      <p class="fw-cat-example"><strong style="color:var(--ana)">AI role:</strong> Multi-factor modeling, financial statement parsing, sector-specific LLMs, portfolio optimization.</p>
+    </div>
+
+    <div class="fw-cat adv-beh">
+      <span class="fw-cat-icon">🎯</span>
+      <div class="fw-cat-name">Behavioral Advantage</div>
+      <span class="fw-cat-tag" style="color:var(--beh)">Durability: High · Erosion: Slow</span>
+      <p class="fw-cat-desc">
+        Capitalizing on the persistent irrationalities of other market participants. Cognitive biases are deeply ingrained —
+        knowing about a bias does not equate to overcoming it. This makes behavioral inefficiencies remarkably durable.
+        AI can both detect behavioral patterns in markets and help investors enforce their own discipline.
+      </p>
+      <p class="fw-cat-example"><strong style="color:var(--beh)">AI role:</strong> Bias detection in decision workflows, systematic discipline enforcement, sentiment contrarianism.</p>
+    </div>
+
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px;">
+    <div style="background:var(--bg-surface);border:1px solid #2A2008;border-radius:8px;padding:12px 16px;text-align:center;">
+      <div style="font-size:11px;color:var(--inf);font-weight:700;margin-bottom:4px;">Informational</div>
+      <div style="height:6px;border-radius:3px;background:var(--inf);opacity:0.3;margin-bottom:4px;width:30%;margin-left:auto;margin-right:auto;"></div>
+      <div style="font-size:10px;color:var(--text-muted)">Short-lived edge</div>
+    </div>
+    <div style="background:var(--bg-surface);border:1px solid #0E2A1A;border-radius:8px;padding:12px 16px;text-align:center;">
+      <div style="font-size:11px;color:var(--ana);font-weight:700;margin-bottom:4px;">Analytical</div>
+      <div style="height:6px;border-radius:3px;background:var(--ana);opacity:0.4;margin-bottom:4px;width:60%;margin-left:auto;margin-right:auto;"></div>
+      <div style="font-size:10px;color:var(--text-muted)">Medium-term moat</div>
+    </div>
+    <div style="background:var(--bg-surface);border:1px solid #3A2010;border-radius:8px;padding:12px 16px;text-align:center;">
+      <div style="font-size:11px;color:var(--beh);font-weight:700;margin-bottom:4px;">Behavioral</div>
+      <div style="height:6px;border-radius:3px;background:var(--beh);opacity:0.7;margin-bottom:4px;width:100%;"></div>
+      <div style="font-size:10px;color:var(--text-muted)">Most durable advantage</div>
+    </div>
+  </div>
+</div>
+
+<hr class="fw-divider">
+
+<!-- ── Supporting dimensions ──────────────────────────────────────────────── -->
+<div class="fw-section">
+  <div class="fw-section-tag"><span class="tag-num">5</span> Supporting Dimensions</div>
+  <h2 class="fw-section-title">Autonomy &amp; Evaluation Parameters</h2>
+  <p class="fw-section-sub">
+    Beyond the three primary axes, each agent is characterized by where it sits on the autonomy spectrum —
+    from low-autonomy copilots that surface information for human review to fully autonomous agents
+    that act without real-time oversight — and by a set of evaluation parameters that determine
+    its operational fit within an enterprise investment workflow.
+  </p>
+
+  <div class="row g-4">
+    <div class="col-md-7">
+      <h6 style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;">Autonomy Level</h6>
+      <div class="fw-cat-grid cols-2">
+
+        <div class="fw-cat auto-low">
+          <div class="fw-cat-name">Low Autonomy</div>
+          <span class="fw-cat-tag" style="color:#3A9888">Decision Support</span>
+          <p class="fw-cat-desc">Surfaces information and analysis; all decisions require human sign-off. Examples: copilots, dashboards, search tools.</p>
+        </div>
+
+        <div class="fw-cat auto-med">
+          <div class="fw-cat-name">Medium Autonomy</div>
+          <span class="fw-cat-tag" style="color:#6478C0">Assisted Execution</span>
+          <p class="fw-cat-desc">Executes within defined parameters but escalates edge cases to humans. Examples: rule-based execution algos, compliance screeners.</p>
+        </div>
+
+        <div class="fw-cat auto-hi">
+          <div class="fw-cat-name">High Autonomy</div>
+          <span class="fw-cat-tag" style="color:#9868A8">Supervised Agency</span>
+          <p class="fw-cat-desc">Acts independently within broad constraints; humans monitor and can intervene. Examples: systematic quant strategies, robo-advisors.</p>
+        </div>
+
+        <div class="fw-cat auto-full">
+          <div class="fw-cat-name">Fully Autonomous</div>
+          <span class="fw-cat-tag" style="color:#C04848">End-to-End Agency</span>
+          <p class="fw-cat-desc">Operates without real-time human oversight. The most consequential category — regulatory alignment and robustness criteria are most demanding here.</p>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="col-md-5">
+      <h6 style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;">Evaluation Parameters</h6>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+
+        <div class="fw-cat">
+          <div class="fw-cat-name" style="font-size:13px;">Learning Capability</div>
+          <p class="fw-cat-desc">How the agent is trained and updated, ranging from centrally engineered domain data with controlled retrieval to continuous, unsupervised online learning.</p>
+        </div>
+
+        <div class="fw-cat">
+          <div class="fw-cat-name" style="font-size:13px;">Interaction Mode</div>
+          <p class="fw-cat-desc">The mechanism of user engagement, such as in-platform natural-language queries, API integrations, or programmatic data feeds.</p>
+        </div>
+
+        <div class="fw-cat">
+          <div class="fw-cat-name" style="font-size:13px;">Regulatory Compliance</div>
+          <p class="fw-cat-desc">The agent's alignment with enterprise guardrails, including scoped data access, timestamped auditability, and content filtering.</p>
+        </div>
+
+        <div class="fw-cat">
+          <div class="fw-cat-name" style="font-size:13px;">Decision Function</div>
+          <p class="fw-cat-desc">The specific role played by the agent, whether generating signals, supporting decision-productivity, or acting with execution authority.</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="fw-divider">
+
+<!-- ── How to read the matrix ─────────────────────────────────────────────── -->
+<div class="fw-section">
+  <div class="fw-section-tag"><span class="tag-num">6</span> Reading the Matrix</div>
+  <h2 class="fw-section-title">How to use this classification system</h2>
+  <p class="fw-section-sub">
+    Any AI agent in the investment industry can be pinned to a coordinate in this space.
+    That coordinate answers a practical question: <em>is this the right tool, in the right place, for the right kind of problem?</em>
+  </p>
+
+  <div class="fw-read-grid">
+    <div class="fw-read-card">
+      <div class="fw-read-num">1</div>
+      <h6>Identify the complexity tier</h6>
+      <p>Is the problem fundamentally quantifiable (White) or irreducibly uncertain (Black)? This determines which class of AI approach is epistemologically valid.</p>
+    </div>
+    <div class="fw-read-card">
+      <div class="fw-read-num">2</div>
+      <h6>Map the process stage(s)</h6>
+      <p>Where does the agent intervene in the value chain? An agent can span multiple stages — but each stage has different autonomy tolerances and regulatory exposure.</p>
+    </div>
+    <div class="fw-read-card">
+      <div class="fw-read-num">3</div>
+      <h6>Assign the comparative advantage</h6>
+      <p>Which type of edge does this agent support — or create? Align AI deployment with the firm's actual competitive strategy, not just available tooling.</p>
+    </div>
+    <div class="fw-read-card">
+      <div class="fw-read-num">4</div>
+      <h6>Calibrate autonomy to context</h6>
+      <p>Higher complexity demands lower autonomy. A fully autonomous agent in a Black Swan environment is misclassified — or misdeployed. The matrix makes this visible.</p>
+    </div>
+    <div class="fw-read-card">
+      <div class="fw-read-num">5</div>
+      <h6>Assess governance fit</h6>
+      <p>Regulators and compliance teams can use the coordinate to determine oversight requirements: auditability, explainability, human-in-the-loop thresholds.</p>
+    </div>
+  </div>
+
+  <div style="margin-top:24px;text-align:center;">
+    <a href="{{ url_for('matrix') }}" class="btn btn-primary me-2">View the Classification Matrix →</a>
+    <a href="{{ url_for('guide') }}" class="btn btn-outline-secondary">Find agents by criteria →</a>
+  </div>
+</div>
+
+{% endblock %}
