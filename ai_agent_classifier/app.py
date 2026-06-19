@@ -23,7 +23,10 @@ from exports import build_excel, build_word, build_pdf
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(24)
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///agents.db"
+_db_url = os.environ.get("DATABASE_URL", "sqlite:///agents.db")
+if _db_url.startswith("postgres://"):
+    _db_url = _db_url.replace("postgres://", "postgresql://", 1)
+app.config["SQLALCHEMY_DATABASE_URI"] = _db_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db.init_app(app)
