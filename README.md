@@ -23,8 +23,8 @@ The complexity dimension adapts Nassim Nicholas Taleb's *Black Swan* theory (200
 | Tier | Label | Epistemic Status |
 |---|---|---|
 | ◻ White Swan | Well-characterized | Distribution fully known and stable — pure optimization domain |
-| ◫ Light-Grey Swan | Discoverable | Distribution exists but must be found via ML — non-stationary, fat-tailed |
-| ▪ Dark-Grey Swan | Understood but unmodellable | Causal structure known; full causal chain cannot be parametrized |
+| Light-Grey Swan | Discoverable | Distribution exists but must be found via ML — non-stationary, fat-tailed |
+| Dark-Grey Swan | Understood but unmodellable | Causal structure known; full causal chain cannot be parametrized |
 | ◼ Black Swan | Unknowable | No reference distribution exists; structurally unprecedented |
 
 ---

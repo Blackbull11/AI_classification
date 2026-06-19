@@ -89,6 +89,28 @@
 
 ---
 
+### 2026-06-18 — New agent entries: Kadoa, Thinknum, YipitData
+
+**Summary**: Researched and produced fully classified JSON entries for three alternative data agents to be added to `build_agents_db.py`. All three classified as Informational advantage / Low autonomy / Commercial. Kadoa (White Swan — deterministic extraction infrastructure), Thinknum (Light-Grey — ML-driven web indexing across 500k+ companies), YipitData (Light-Grey — statistical inference from consumer transaction sample to company-level revenue estimates).
+
+**Files changed**: none — JSON entries delivered as output for manual insertion into `build_agents_db.py` (`agents_data_new` list + `AGENT_CATEGORY_SEED` dict)
+
+**Classification summary**:
+| Agent | Advantage | Complexity | Autonomy | Stages |
+|---|---|---|---|---|
+| Kadoa | informational | white | low | idea-gen, monitoring |
+| Thinknum Alternative Data | informational | light-grey | low | idea-gen, idea-assess |
+| YipitData | informational | light-grey | low | idea-gen, idea-assess, monitoring |
+
+**Design decisions**:
+- Kadoa → White Swan (not Light-Grey): platform generates deterministic, auditable scraping code — analogous to Kensho NERD/Classify, not RavenPack; the investment signal search happens downstream of Kadoa
+- Thinknum → Light-Grey Swan: ML must actively clean, normalize, and validate signals across 500k+ heterogeneous web sources — signal discovery problem, not pure extraction
+- YipitData → monitoring stage added: real-time consumer spend tracking enables continuous revenue surveillance against live portfolio holdings, not just pre-trade research
+
+**Open items**: entries need manual insertion into `build_agents_db.py` and `db` rebuild to take effect
+
+---
+
 ### 2026-06-17 — Framework as landing page + animated CTA
 
 **Summary**: Made the Framework page the app's landing page and added an animated "Explore the Matrix" CTA button at the bottom.
