@@ -393,4 +393,39 @@
 
 ---
 
+### 2026-06-22 — Rebrand "3D" → "Multi-Dimensional" in user-facing copy
+
+**Summary**: Replaced product/brand-level "3D" and "3-Dimensional" terminology with "Multi-Dimensional" to match the source paper's actual title (*A Multi-Dimensional Classification System For AI Agents In The Investment Industry*, Schuller et al. 2025) and the already-present "Multi-Dimensional Classification Report" label in PDF exports. Chose "multi-dimensional" over "5D" because the framework is structurally a **three-axis** coordinate system (Axis X = process stage, Axis Y = complexity, Axis Z = comparative advantage); agent type and autonomy are *supporting* badge encodings, not framework axes, so "5D" would have misrepresented the model and contradicted the framework page's own "Three axes. One coordinate system." section.
+
+**Deliberately left unchanged**: the literal 3-axis mechanics (`Three axes…`, `three structural dimensions`, Axis X/Y/Z cards), the purely visual "3D cube" CSS aesthetic and class names (`.matrix-table-3d`, `.stage-cube`), hex color codes, and historical DEV_LOG entries.
+
+**Files changed**:
+- `ai_agent_classifier/templates/base.html` — navbar brand name
+- `ai_agent_classifier/templates/framework.html` — hero title, two "mapped in 3D" CTA headings, "three-dimensional space" → "multi-dimensional space"
+- `ai_agent_classifier/exports.py` — Word + PDF "Panthera's 3D classification framework" link text
+- `presentation/build_deck.py` — footer brand, title slide, platform/matrix slide titles & bullet
+- `docs/CLAUDE.md` — matrix.html file description + route table row
+
+**Open items**: If the intent was actually to expand the model to 5 distinct axes (e.g. promoting autonomy + agent type to first-class dimensions), the framework page's 3-axis content would need a deeper rework — flagged to user.
+
+---
+
+### 2026-06-22 — Framework page reframed as 5 axes + expanded category cluster
+
+**Summary**: Reworked `/framework` to present the framework as **five dimensions** (complexity, process stage, comparative advantage, autonomy, product type) instead of "three axes + supporting dimensions". The deck (`build_deck.py` slide 4) already presented 5 dimensions, so only the web page was out of sync.
+
+**Changes (`templates/framework.html`)**:
+- Hero body + CTA sub reworded from "three structural dimensions" → five.
+- Overview section retitled **"Five dimensions. One coordinate system."**; axes-row grid expanded from 3 → 5 cards (added Autonomy = "Dimension 4 · Governance" and Product Type = "Dimension 5 · Provenance"); new `.axis-auto` / `.axis-prod` card + badge CSS; `.fw-axes-row` now `repeat(5,1fr)` with responsive breakpoints.
+- Matrix mini-grid legend corrected to all 5 encodings: Row=complexity · Column=stage · Fill=advantage · Border=product type · Pip=autonomy (previously mislabeled border as advantage).
+- Section 5 promoted from "Supporting Dimensions" to **"Dimension 4 — Autonomy"** (autonomy cards kept; evaluation parameters retained as operational qualifiers).
+- New **"Dimension 5 — Product Type"** section: Commercial / In-house / Academic cards with solid/outline/dashed borders echoing the matrix encoding + benchmark-integrity note.
+- Category section expanded to **"The Category Cluster"** (now section 7): intro framing categories as clusters across the 5 dimensions, per-card `label` chip, and a "how to read the cluster" explainer. Section tags renumbered (Reading the Matrix → 8).
+
+**Verification**: rendered `/framework` via Flask test client → 200, all new headings present.
+
+**Open items**: The deck (`presentation/build_deck.py`) already covers the 5 dimensions on slide 4 but has **no category-cluster slide**. If "the presentation page" meant the .pptx deck, a categories slide + broader 5-axis treatment can be added (note: would shift the hardcoded 15-slide footer numbering) — flagged to user, not yet done.
+
+---
+
 <!-- APPEND NEW SESSIONS ABOVE THIS LINE -->

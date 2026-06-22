@@ -55,7 +55,7 @@ AI_classification/
     │   └── img/                   ← Panthera logo (PNG + SVG)
     └── templates/
         ├── base.html              ← Master layout (navbar, flash messages)
-        ├── matrix.html            ← 3D cube classification matrix + autonomy scatter
+        ├── matrix.html            ← Multi-dimensional classification matrix (3D-cube visual) + autonomy scatter
         ├── pipeline.html          ← Agent lifecycle management table
         ├── wizard.html            ← 4-step classification wizard
         ├── agent_detail.html      ← Per-agent profile view
@@ -152,7 +152,7 @@ Only **one** advantage per agent.
 ### Pages
 | Method | Path | Function | Description |
 |---|---|---|---|
-| GET | `/` | `matrix()` | 3D classification matrix + autonomy scatter view |
+| GET | `/` | `matrix()` | Multi-dimensional classification matrix + autonomy scatter view |
 | GET | `/pipeline` | `pipeline()` | Agent lifecycle table |
 | GET | `/guide` | `guide()` | Agent Finder — 4-step questionnaire, JS-filtered results |
 | GET | `/add` | `add_agent()` | Start full wizard (add mode) |

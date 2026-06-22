@@ -42,7 +42,7 @@ The complexity dimension adapts Nassim Nicholas Taleb's *Black Swan* theory (200
 ## Features
 
 ### Classification Matrix (`/`)
-- **3D cube matrix** — Complexity tiers (rows) × Investment process stages (columns), populated with colour-coded agent badges
+- **5D cube matrix** — Complexity tiers (rows) × Investment process stages (columns), populated with colour-coded agent badges
 - **Three-channel badge encoding** — fill/border color = comparative advantage (orange/green/rust), border style = agent type (solid/outlined/dashed), bottom-right pip = autonomy level (grey/amber/orange/crimson-pulsing)
 - **Fully Autonomous tier** — fourth autonomy level with a pulsing crimson pip for systems with no human veto on individual decisions (e.g. AIEQ, Numerai)
 - **Advantage filter** — live client-side filter to isolate informational / analytical / behavioral agents

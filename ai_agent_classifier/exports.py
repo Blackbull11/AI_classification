@@ -855,7 +855,7 @@ def build_word(agents):
     _add_hyperlink_styled(
         sp2,
         "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6290078",
-        "Panthera's 3D classification framework",
+        "Panthera's multi-dimensional classification framework",
         color="1155CC", size=13, italic=True,
     )
 
@@ -1299,7 +1299,7 @@ def build_pdf(agents):
     story.append(Paragraph("Multi-Dimensional Classification Report using", gst["subtitle1"]))
     story.append(Paragraph(
         '<a href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6290078">'
-        "<u>Panthera's 3D classification framework</u></a>",
+        "<u>Panthera's multi-dimensional classification framework</u></a>",
         gst["subtitle2"],
     ))
     story.append(Paragraph(datetime.utcnow().strftime("%d %B %Y"), gst["date"]))
