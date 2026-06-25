@@ -1,9 +1,11 @@
 import json
 import os
 from datetime import date
+from functools import wraps
 
 from flask import (
     Flask,
+    abort,
     flash,
     jsonify,
     redirect,
@@ -13,11 +15,18 @@ from flask import (
     session,
     url_for,
 )
-from flask_admin import Admin
+from flask_admin import Admin, AdminIndexView
 from flask_admin.contrib.sqla import ModelView
+from flask_login import (
+    LoginManager,
+    current_user,
+    login_required,
+    login_user,
+    logout_user,
+)
 from wtforms import TextAreaField
 
-from models import Agent, db
+from models import Agent, User, db
 from seed_data import seed_database
 from exports import build_excel, build_word, build_pdf
 
@@ -31,7 +40,35 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db.init_app(app)
 
-admin = Admin(app, name="Panthera Admin", url="/admin")
+login_manager = LoginManager()
+login_manager.login_view = "login"
+login_manager.init_app(app)
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+
+def admin_required(view):
+    @wraps(view)
+    @login_required
+    def wrapped(*args, **kwargs):
+        if current_user.role != "admin":
+            abort(403)
+        return view(*args, **kwargs)
+    return wrapped
+
+
+class SecureAdminIndexView(AdminIndexView):
+    def is_accessible(self):
+        return current_user.is_authenticated and current_user.role == "admin"
+
+    def inaccessible_callback(self, name, **kwargs):
+        return redirect(url_for("login", next=request.url))
+
+
+admin = Admin(app, name="Panthera Admin", url="/admin", index_view=SecureAdminIndexView())
 
 STAGES = [
     ("idea-gen",    "Idea Generation"),
@@ -136,6 +173,12 @@ CATEGORY_MAP = {c["id"]: c for c in CATEGORIES}
 # ─── Admin panel ──────────────────────────────────────────────────────────────
 
 class AgentModelView(ModelView):
+    def is_accessible(self):
+        return current_user.is_authenticated and current_user.role == "admin"
+
+    def inaccessible_callback(self, name, **kwargs):
+        return redirect(url_for("login", next=request.url))
+
     # List view
     column_list = ("id", "name", "status", "complexity", "advantage", "autonomy", "agent_type", "category_id", "created_at")
     column_searchable_list = ("name", "description", "url")
@@ -280,6 +323,34 @@ def inject_globals():
     return {"pending_count": pending_count, "today": date.today()}
 
 
+# ─── Auth ────────────────────────────────────────────────────────────────────
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for("matrix"))
+
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+        user = User.query.filter_by(email=email).first()
+        if user and user.check_password(password):
+            login_user(user)
+            flash(f"Welcome back, {user.email}.", "success")
+            next_url = request.args.get("next")
+            return redirect(next_url or url_for("matrix"))
+        flash("Invalid email or password.", "danger")
+
+    return render_template("login.html")
+
+
+@app.route("/logout", methods=["POST"])
+def logout():
+    logout_user()
+    flash("Logged out.", "info")
+    return redirect(url_for("matrix"))
+
+
 # ─── Matrix ───────────────────────────────────────────────────────────────────
 
 @app.route("/matrix")
@@ -411,6 +482,7 @@ def matrix():
 STATUS_ORDER = {"pending": 0, "classified": 1, "rejected": 2}
 
 @app.route("/pipeline")
+@admin_required
 def pipeline():
     agents = Agent.query.all()
     agents = sorted(agents, key=lambda a: (STATUS_ORDER.get(a.status, 9), a.name.lower()))
@@ -432,6 +504,7 @@ def pipeline():
 
 
 @app.route("/quick-add", methods=["POST"])
+@admin_required
 def quick_add():
     name = request.form.get("name", "").strip()
     url  = request.form.get("url",  "").strip()
@@ -461,6 +534,7 @@ def _wizard_context(mode, step, draft, agent=None):
 
 
 @app.route("/add")
+@admin_required
 def add_agent():
     session["wizard_draft"] = {}
     return render_template(
@@ -470,6 +544,7 @@ def add_agent():
 
 
 @app.route("/add/step/<int:n>", methods=["POST"])
+@admin_required
 def add_step(n):
     draft = session.get("wizard_draft", {})
     draft = _save_step_to_draft(draft, n, request.form)
@@ -481,6 +556,7 @@ def add_step(n):
 
 
 @app.route("/add/save", methods=["POST"])
+@admin_required
 def add_save():
     draft = session.get("wizard_draft", {})
     draft = _save_step_to_draft(draft, 4, request.form)
@@ -507,6 +583,7 @@ def add_save():
 
 
 @app.route("/edit/<int:agent_id>")
+@admin_required
 def edit_agent(agent_id):
     agent = Agent.query.get_or_404(agent_id)
     draft = {
@@ -528,6 +605,7 @@ def edit_agent(agent_id):
 
 
 @app.route("/edit/<int:agent_id>/step/<int:n>", methods=["POST"])
+@admin_required
 def edit_step(agent_id, n):
     agent = Agent.query.get_or_404(agent_id)
     draft = session.get("wizard_draft", {})
@@ -539,6 +617,7 @@ def edit_step(agent_id, n):
 
 
 @app.route("/edit/<int:agent_id>/save", methods=["POST"])
+@admin_required
 def edit_save(agent_id):
     agent = Agent.query.get_or_404(agent_id)
     draft = session.get("wizard_draft", {})
@@ -578,6 +657,7 @@ def agent_detail(agent_id):
 
 
 @app.route("/agents/<int:agent_id>/classify")
+@admin_required
 def classify_agent(agent_id):
     agent = Agent.query.get_or_404(agent_id)
     draft = {
@@ -599,6 +679,7 @@ def classify_agent(agent_id):
 
 
 @app.route("/agents/<int:agent_id>/classify/step/<int:n>", methods=["POST"])
+@admin_required
 def classify_step(agent_id, n):
     agent = Agent.query.get_or_404(agent_id)
     draft = session.get("wizard_draft", {})
@@ -610,6 +691,7 @@ def classify_step(agent_id, n):
 
 
 @app.route("/agents/<int:agent_id>/classify/save", methods=["POST"])
+@admin_required
 def classify_save(agent_id):
     agent = Agent.query.get_or_404(agent_id)
     draft = session.get("wizard_draft", {})
@@ -634,6 +716,7 @@ def classify_save(agent_id):
 
 
 @app.route("/agents/<int:agent_id>/reject", methods=["POST"])
+@admin_required
 def reject_agent(agent_id):
     agent = Agent.query.get_or_404(agent_id)
     agent.status = "rejected"
@@ -643,6 +726,7 @@ def reject_agent(agent_id):
 
 
 @app.route("/agents/<int:agent_id>/restore", methods=["POST"])
+@admin_required
 def restore_agent(agent_id):
     agent = Agent.query.get_or_404(agent_id)
     agent.status = "pending"
@@ -652,6 +736,7 @@ def restore_agent(agent_id):
 
 
 @app.route("/delete/<int:agent_id>", methods=["POST"])
+@admin_required
 def delete_agent(agent_id):
     agent = Agent.query.get_or_404(agent_id)
     name = agent.name
@@ -740,6 +825,7 @@ def framework():
 # ─── API ─────────────────────────────────────────────────────────────────────
 
 @app.route("/api/agents")
+@admin_required
 def api_agents():
     agents = Agent.query.all()
     return jsonify([

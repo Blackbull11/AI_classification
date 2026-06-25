@@ -17,6 +17,7 @@
       </a>
     </p>
   </div>
+  {% if current_user.is_authenticated and current_user.role == 'admin' %}
   <div class="d-flex gap-2 align-items-center">
     <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal"
             data-bs-target="#quickAddModal">
@@ -26,10 +27,11 @@
       Full Wizard →
     </a>
   </div>
+  {% endif %}
 </div>
 
 <!-- Pending notification banner -->
-{% if pending_count > 0 %}
+{% if pending_count > 0 and current_user.is_authenticated and current_user.role == 'admin' %}
 <div class="pending-banner d-flex align-items-center justify-content-between mb-3">
   <span>⏳ {{ pending_count }} agent(s) pending classification</span>
   <a href="{{ url_for('pipeline') }}" class="fw-semibold text-decoration-none" style="color:var(--accent)">
@@ -506,6 +508,7 @@
   </div>
 </div>
 
+{% if current_user.is_authenticated and current_user.role == 'admin' %}
 <!-- Quick Add Modal -->
 <div class="modal fade" id="quickAddModal" tabindex="-1" aria-labelledby="quickAddLabel"
      aria-hidden="true">
@@ -539,6 +542,7 @@
     </div>
   </div>
 </div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}

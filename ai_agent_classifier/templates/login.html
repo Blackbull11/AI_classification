@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Log in — Panthera Insights{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+  <div class="col-lg-4 col-md-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-4">
+        <h5 class="fw-bold mb-4">Staff log in</h5>
+        <form method="POST" action="{{ url_for('login', next=request.args.get('next')) }}" novalidate>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Email</label>
+            <input type="email" name="email" class="form-control" required autofocus
+                   placeholder="you@panthera.design" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Password</label>
+            <input type="password" name="password" class="form-control" required />
+          </div>
+          <button type="submit" class="btn btn-primary w-100" style="background:var(--accent);border-color:var(--accent)">
+            Log in
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
