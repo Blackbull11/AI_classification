@@ -1,8 +1,10 @@
 flask
 flask-sqlalchemy
 flask-admin
+flask-login
 python-docx
 openpyxl
 reportlab
+psycopg2-binary
 anthropic
 gunicorn

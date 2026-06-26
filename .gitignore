@@ -13,7 +13,6 @@ env/
 
 # Log / debug output files
 ai_agent_classifier/*.txt
-!ai_agent_classifier/requirements.txt
 
 # Keep agents.db (seeded data ships with the app)
 # To ignore writes: uncomment the next line and use a Railway volume instead

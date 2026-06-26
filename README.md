@@ -136,8 +136,8 @@ The live database contains **77 classified agents** spanning commercial products
 
 ```bash
 git clone <repo-url>
-cd AI_classification/ai_agent_classifier
-pip install flask flask-sqlalchemy python-docx openpyxl reportlab anthropic
+cd AI_classification
+pip install -r requirements.txt
 ```
 
 **Optional — for AI auto-classification:**
@@ -189,13 +189,13 @@ AI_classification/
 ├── CLAUDE.md                          ← developer context for AI tooling
 ├── DEV_LOG.md                         ← rolling development log
 ├── CLASSIFICATION_GUIDE.md            ← Swan Theory framework + classification guide
+├── requirements.txt                   ← single source of truth (Railway/Nixpacks installs from here)
 └── ai_agent_classifier/
     ├── app.py                         ← Flask routes + session wizard
     ├── models.py                      ← SQLAlchemy Agent model
     ├── auto_classify.py               ← Claude API batch classifier
     ├── exports.py                     ← Excel / Word / PDF export engine
     ├── build_agents_db.py             ← seeds 77 pre-classified agents
-    ├── requirements.txt
     ├── instance/
     │   └── agents.db                  ← SQLite database
     ├── static/
