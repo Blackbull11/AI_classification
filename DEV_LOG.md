@@ -93,7 +93,10 @@ The round-1 fix didn't actually solve it: Railway crashed with `ModuleNotFoundEr
 **Verification:** Ran locally; marked one agent `premium=True` and created admin/subscriber/visitor test accounts. Confirmed: anonymous and visitor see the locked teaser and get 403 on exports; subscriber and admin see full content and can export; Flask-Admin list/form shows the `premium` toggle; Decision GPS shows the disclosure banner; nav renames and Exports/Subscribe swap render correctly for each role. Test users and the premium flag reverted out of the tracked `instance/agents.db` fixture via `git checkout --`.
 
 **Open items:**
-- Which ~50% of the 77 agents get `premium=True` is a curatorial call left to the admin via Flask-Admin (per the plan) — not auto-assigned.
 - `/subscribe`'s contact address (`insights@panthera.design`) is a placeholder — confirm or change.
 - Phase 3 (Compare & Shortlist) and Phase 4 (Supplier portal) nav items intentionally omitted from the navbar — adding them now would be dead links until those phases land.
+
+### Follow-up — premium curation rule
+
+The "which ~50%" open item above was resolved with two explicit business rules: only **commercial** agents may be premium (in-house/academic always free), and every process stage must keep **at least 40% free**. Added `ai_agent_classifier/set_premium.py` — a rerunnable greedy selection (cheapest agents by stage-count first, capped per stage at 60% premium) — rather than a one-off manual pick, so it can be regenerated after future agents are added. Applied to the local `instance/agents.db` fixture: **39/78 (50%) marked premium**, all commercial, free% per stage ranges 42%–100% (compliance is tightest at 42%, still clears the 40% floor). Production (Postgres) needs the same script run against it — `DATABASE_URL` makes `set_premium.py` environment-aware, so it can run there too (e.g. via `railway run python set_premium.py`).
 - Nothing committed yet — all Phase 2 changes are local on the `insights` branch pending review.
