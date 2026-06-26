@@ -21,6 +21,16 @@
     </ol>
   </nav>
 
+  {% if agent.name == 'Panthera Decision GPS' %}
+    <div class="alert alert-warning d-flex align-items-start gap-2 mb-3" style="font-size:12.5px">
+      <span>⚠️</span>
+      <span>
+        <strong>Panthera-affiliated product.</strong> Decision GPS is built by Panthera Group. It is classified
+        here on the same neutral criteria as every other agent in the catalogue, disclosed for transparency.
+      </span>
+    </div>
+  {% endif %}
+
   <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap mt-2">
     <div>
       <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
@@ -34,6 +44,9 @@
         {% endif %}
         {% if agent.agent_type %}
           <span class="detail-type-chip">{{ agent.agent_type|replace('-',' ')|title }}</span>
+        {% endif %}
+        {% if agent.premium %}
+          <span class="badge" style="font-size:11px;padding:4px 10px;background:var(--accent);color:#fff">★ Premium</span>
         {% endif %}
       </div>
       <div class="d-flex align-items-center gap-3 flex-wrap">
@@ -88,23 +101,33 @@
           <p class="text-muted mb-0 small">No description provided.</p>
         {% endif %}
 
-        {% set feats = agent.features_list %}
-        {% if feats %}
+        {% if locked %}
           <div class="detail-divider"></div>
-          <div class="detail-section-title">Key Features</div>
-          <ul class="detail-features-list mb-0">
-            {% for f in feats %}
-              {% if f.strip() %}<li>{{ f }}</li>{% endif %}
-            {% endfor %}
-          </ul>
-        {% endif %}
+          <div class="text-center py-4 px-3 rounded-3" style="background:rgba(196,132,90,0.06);border:1px dashed var(--accent)">
+            <div style="font-size:22px;margin-bottom:8px">🔒</div>
+            <div class="detail-section-title mb-1">Full analysis is for subscribers</div>
+            <p class="text-muted small mb-3">Key features and analyst rationale for this premium agent are gated.</p>
+            <a href="{{ url_for('subscribe') }}" class="btn btn-sm" style="background:var(--accent);color:#fff;border:none">Subscribe to unlock →</a>
+          </div>
+        {% else %}
+          {% set feats = agent.features_list %}
+          {% if feats %}
+            <div class="detail-divider"></div>
+            <div class="detail-section-title">Key Features</div>
+            <ul class="detail-features-list mb-0">
+              {% for f in feats %}
+                {% if f.strip() %}<li>{{ f }}</li>{% endif %}
+              {% endfor %}
+            </ul>
+          {% endif %}
 
-        {% if rd.get('general') %}
-          <div class="detail-divider"></div>
-          <div class="detail-section-title">Analyst Notes</div>
-          <p class="mb-0" style="font-size:13.5px;line-height:1.75;color:var(--text-secondary);font-style:italic">
-            {{ rd.general }}
-          </p>
+          {% if rd.get('general') %}
+            <div class="detail-divider"></div>
+            <div class="detail-section-title">Analyst Notes</div>
+            <p class="mb-0" style="font-size:13.5px;line-height:1.75;color:var(--text-secondary);font-style:italic">
+              {{ rd.general }}
+            </p>
+          {% endif %}
         {% endif %}
 
       </div>
@@ -133,7 +156,7 @@
                 </span>
               {% endfor %}
             </div>
-            {% if rd.get('stages') %}
+            {% if rd.get('stages') and not locked %}
               <div class="detail-metric-rationale mt-2">{{ rd.stages }}</div>
             {% endif %}
           </div>
@@ -155,7 +178,7 @@
                 <div class="detail-metric-value" style="color:{{ adv_color.get(agent.advantage,'var(--text-primary)') }}">
                   {{ advantage_labels.get(agent.advantage, agent.advantage) }}
                 </div>
-                {% if rd.get('advantage') %}
+                {% if rd.get('advantage') and not locked %}
                   <div class="detail-metric-rationale">{{ rd.advantage }}</div>
                 {% endif %}
               </div>
@@ -169,7 +192,7 @@
             <div class="detail-meta-block h-100">
               <div class="detail-metric-label">Agent Type</div>
               <div class="detail-meta-value">{{ agent.agent_type|replace('-',' ')|title if agent.agent_type else '—' }}</div>
-              {% if rd.get('agent_type') %}
+              {% if rd.get('agent_type') and not locked %}
                 <div class="detail-metric-rationale" style="font-size:11px">{{ rd.agent_type }}</div>
               {% endif %}
             </div>
@@ -188,7 +211,7 @@
                 <div class="detail-metric-value" style="color:{{ cx_color.get(agent.complexity,'var(--text-primary)') }}">
                   {{ complexity_labels.get(agent.complexity, agent.complexity) }}
                 </div>
-                {% if rd.get('complexity') %}
+                {% if rd.get('complexity') and not locked %}
                   <div class="detail-metric-rationale">{{ rd.complexity }}</div>
                 {% endif %}
               </div>
@@ -206,7 +229,7 @@
                 {%- elif agent.autonomy %}{{ agent.autonomy|title }}
                 {%- else %}—{% endif -%}
               </div>
-              {% if rd.get('autonomy') %}
+              {% if rd.get('autonomy') and not locked %}
                 <div class="detail-metric-rationale" style="font-size:11px">{{ rd.autonomy }}</div>
               {% endif %}
             </div>

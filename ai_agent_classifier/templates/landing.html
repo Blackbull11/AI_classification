@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+{% block title %}Panthera Insights — The Reference Map of AI Agents in Investment Management{% endblock %}
+
+{% block content %}
+<style>
+/* ── Landing page local styles (reuses framework.html's component language) ── */
+
+@keyframes ld-glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(196,132,90,0.5); }
+  50%       { box-shadow: 0 0 0 10px rgba(196,132,90,0); }
+}
+@keyframes ld-arrow-bounce {
+  0%, 100% { transform: translateX(0); }
+  50%       { transform: translateX(6px); }
+}
+.fw-cta-wrap {
+  margin-top: 40px;
+  padding: 36px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-surface);
+  text-align: center;
+}
+.fw-cta-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+.fw-cta-heading {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+.fw-cta-sub {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+.fw-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 28px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  text-decoration: none;
+  animation: ld-glow-pulse 2s ease-in-out infinite;
+  transition: background 0.15s;
+}
+.fw-cta-btn:hover { color: #fff; background: var(--accent); filter: brightness(1.15); }
+.fw-cta-arrow { display: inline-block; animation: ld-arrow-bounce 1s ease-in-out infinite; }
+.fw-cta-secondary {
+  display: inline-block;
+  margin-top: 16px;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-decoration: none;
+}
+.fw-cta-secondary:hover { color: var(--text-secondary); text-decoration: underline; }
+
+.fw-hero { padding: 48px 0 36px; border-bottom: 1px solid var(--border); margin-bottom: 44px; }
+.fw-hero-label {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 10px;
+}
+.fw-hero-title { font-size: 32px; font-weight: 800; color: var(--text-primary); line-height: 1.2; margin-bottom: 16px; }
+.fw-hero-body { font-size: 14.5px; color: var(--text-secondary); line-height: 1.7; max-width: 640px; margin-bottom: 14px; }
+.fw-cite { font-size: 11px; color: var(--text-muted); }
+
+.fw-section { margin-bottom: 52px; }
+.fw-section-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text-muted); margin-bottom: 6px;
+}
+.fw-section-title { font-size: 22px; font-weight: 800; color: var(--text-primary); margin-bottom: 6px; }
+.fw-section-sub { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 24px; max-width: 700px; line-height: 1.6; }
+
+.ld-pill-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.ld-pill {
+  font-size: 12px; color: var(--text-secondary); background: var(--bg-surface);
+  border: 1px solid var(--border); border-radius: 999px; padding: 8px 16px;
+}
+
+.fw-cat-grid { display: grid; gap: 14px; }
+.fw-cat-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+.fw-cat-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 1100px) { .fw-cat-grid.cols-4 { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 700px)  { .fw-cat-grid.cols-4, .fw-cat-grid.cols-3 { grid-template-columns: 1fr; } }
+
+.fw-cat {
+  background: var(--bg-surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 18px; position: relative; overflow: hidden;
+}
+.fw-cat::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--accent); }
+.fw-cat-num {
+  width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: #fff;
+  font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+  margin-bottom: 10px;
+}
+.fw-cat-name { font-size: 13px; font-weight: 800; color: var(--text-primary); margin-bottom: 4px; }
+.fw-cat-tag { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--accent); margin-bottom: 8px; display: block; }
+.fw-cat-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.55; margin: 0; }
+
+.fw-read-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.fw-read-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+.fw-read-card h6 { font-size: 12.5px; font-weight: 700; color: var(--text-primary); margin-bottom: 5px; }
+.fw-read-card p { font-size: 12px; color: var(--text-secondary); margin: 0; line-height: 1.55; }
+
+.fw-divider { border: none; border-top: 1px solid var(--border); margin: 48px 0; }
+
+.ld-neutral-box {
+  background: var(--bg-surface); border: 1px dashed var(--accent); border-radius: 12px;
+  padding: 28px; text-align: center;
+}
+.ld-neutral-box h3 { font-size: 18px; font-weight: 800; color: var(--text-primary); margin-bottom: 10px; }
+.ld-neutral-box p { font-size: 13px; color: var(--text-secondary); max-width: 640px; margin: 0 auto; line-height: 1.65; }
+</style>
+
+<!-- ── Hero ──────────────────────────────────────────────────────────────── -->
+<div class="fw-hero">
+  <div class="row align-items-center g-4">
+    <div class="col-lg-8">
+      <div class="fw-hero-label">Neutral AI-Agent Intelligence for Investment Management</div>
+      <h1 class="fw-hero-title">The reference map of AI agents in investment management.</h1>
+      <p class="fw-hero-body">
+        Stop drowning in vendor decks. Filter, compare, and shortlist the right AI tools for your investment
+        process — on one rigorous, peer-reviewed framework. No tools to sell you.
+      </p>
+      <p class="fw-cite">
+        Built on Schuller, Wierckx, Kuhn &amp; Zilic (2025) · ~77 agents classified &amp; audited · 10 functional archetypes.
+      </p>
+    </div>
+    <div class="col-lg-4">
+      <div class="fw-cta-wrap" style="margin-top:0;">
+        <a href="{{ url_for('matrix') }}" class="fw-cta-btn">
+          Explore the Map
+          <span class="fw-cta-arrow">→</span>
+        </a>
+        <br>
+        <a href="{{ url_for('guide') }}" class="fw-cta-secondary">Find an agent by criteria →</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── The problem ──────────────────────────────────────────────────────── -->
+<div class="fw-section">
+  <h2 class="fw-section-title">There are hundreds of AI agents and no neutral way to compare them.</h2>
+  <p class="fw-section-sub">Panthera Insights fixes that.</p>
+  <div class="ld-pill-row">
+    <span class="ld-pill">Information overload</span>
+    <span class="ld-pill">No common language</span>
+    <span class="ld-pill">No idea which tool fits which decision</span>
+  </div>
+</div>
+
+<hr class="fw-divider">
+
+<!-- ── Methodology ───────────────────────────────────────────────────────── -->
+<div class="fw-section">
+  <div class="fw-section-tag">Methodology</div>
+  <h2 class="fw-section-title">Four questions. One coordinate.</h2>
+  <p class="fw-section-sub">Any agent, instantly placed.</p>
+
+  <div class="fw-cat-grid cols-4">
+    <div class="fw-cat">
+      <div class="fw-cat-num">1</div>
+      <div class="fw-cat-tag">Investment Process Stage</div>
+      <div class="fw-cat-name">Where does it work?</div>
+      <p class="fw-cat-desc">Idea generation through stakeholder reporting — the 7 stages of the investment process.</p>
+    </div>
+    <div class="fw-cat">
+      <div class="fw-cat-num">2</div>
+      <div class="fw-cat-tag">Autonomy</div>
+      <div class="fw-cat-name">How independently does it act?</div>
+      <p class="fw-cat-desc">From decision support to full end-to-end agency with no human veto.</p>
+    </div>
+    <div class="fw-cat">
+      <div class="fw-cat-num">3</div>
+      <div class="fw-cat-tag">Comparative Advantage</div>
+      <div class="fw-cat-name">What kind of edge does it give?</div>
+      <p class="fw-cat-desc">Informational, analytical, or behavioral — each with different durability.</p>
+    </div>
+    <div class="fw-cat">
+      <div class="fw-cat-num">4</div>
+      <div class="fw-cat-tag">Swan Complexity</div>
+      <div class="fw-cat-name">How well does it handle the unknown?</div>
+      <p class="fw-cat-desc">White Swan (known) through Black Swan (irreducibly uncertain).</p>
+    </div>
+  </div>
+</div>
+
+<hr class="fw-divider">
+
+<!-- ── What you get ─────────────────────────────────────────────────────── -->
+<div class="fw-section">
+  <div class="fw-section-tag">The Offer</div>
+  <h2 class="fw-section-title">What you actually get</h2>
+
+  <div class="fw-cat-grid cols-3">
+    <div class="fw-cat">
+      <div class="fw-cat-name" style="font-size:15px;">The Map</div>
+      <p class="fw-cat-desc">The live classification matrix — ~77 agents (growing) across stage × complexity, colour-coded by edge, type, and autonomy.</p>
+    </div>
+    <div class="fw-cat">
+      <div class="fw-cat-name" style="font-size:15px;">The Finder</div>
+      <p class="fw-cat-desc">Answer four questions, get a ranked shortlist for your exact workflow.</p>
+    </div>
+    <div class="fw-cat">
+      <div class="fw-cat-name" style="font-size:15px;">The Briefings</div>
+      <p class="fw-cat-desc">Exportable, board-ready reports and periodic market intelligence.</p>
+    </div>
+  </div>
+</div>
+
+<hr class="fw-divider">
+
+<!-- ── Who it's for ─────────────────────────────────────────────────────── -->
+<div class="fw-section">
+  <div class="fw-section-tag">Built For</div>
+  <h2 class="fw-section-title">Who it's for</h2>
+
+  <div class="fw-read-grid">
+    <div class="fw-read-card">
+      <h6>CIOs &amp; Heads of Investment</h6>
+      <p>"Show me the AI landscape for my process — and what's worth a meeting."</p>
+    </div>
+    <div class="fw-read-card">
+      <h6>PMs &amp; Analysts</h6>
+      <p>"Find the right tool for this stage of my workflow, fast."</p>
+    </div>
+    <div class="fw-read-card">
+      <h6>Risk &amp; Compliance</h6>
+      <p>"Tell me how autonomous a tool is before it touches live capital."</p>
+    </div>
+    <div class="fw-read-card">
+      <h6>AI Suppliers</h6>
+      <p>"Get classified credibly and found by the buyers who matter."</p>
+    </div>
+  </div>
+</div>
+
+<hr class="fw-divider">
+
+<!-- ── Neutrality ────────────────────────────────────────────────────────── -->
+<div class="fw-section">
+  <div class="ld-neutral-box">
+    <h3>We don't sell the tools. We make sense of them.</h3>
+    <p>
+      An independent infrastructure layer between investment firms and AI suppliers — including a
+      transparently-flagged listing for Panthera's own Decision GPS.
+    </p>
+  </div>
+</div>
+
+<!-- ── Final CTA ─────────────────────────────────────────────────────────── -->
+<div class="fw-cta-wrap">
+  <div class="fw-cta-label">Ready to explore?</div>
+  <div class="fw-cta-heading">See every AI agent mapped in multi-dimensional space</div>
+  <div class="fw-cta-sub">From 200 AI tools to your shortlist — in ten minutes.</div>
+  <a href="{{ url_for('matrix') }}" class="fw-cta-btn">
+    Explore the Map
+    <span class="fw-cta-arrow">→</span>
+  </a>
+  <br>
+  <a href="{{ url_for('guide') }}" class="fw-cta-secondary">Or find agents by criteria →</a>
+</div>
+{% endblock %}

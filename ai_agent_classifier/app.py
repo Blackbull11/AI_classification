@@ -60,6 +60,22 @@ def admin_required(view):
     return wrapped
 
 
+def has_premium_access():
+    return current_user.is_authenticated and (
+        current_user.role == "admin" or current_user.subscription_active
+    )
+
+
+def premium_required(view):
+    @wraps(view)
+    @login_required
+    def wrapped(*args, **kwargs):
+        if not has_premium_access():
+            abort(403)
+        return view(*args, **kwargs)
+    return wrapped
+
+
 class SecureAdminIndexView(AdminIndexView):
     def is_accessible(self):
         return current_user.is_authenticated and current_user.role == "admin"
@@ -180,10 +196,10 @@ class AgentModelView(ModelView):
         return redirect(url_for("login", next=request.url))
 
     # List view
-    column_list = ("id", "name", "status", "complexity", "advantage", "autonomy", "agent_type", "category_id", "created_at")
+    column_list = ("id", "name", "status", "premium", "complexity", "advantage", "autonomy", "agent_type", "category_id", "created_at")
     column_searchable_list = ("name", "description", "url")
-    column_filters = ("status", "complexity", "advantage", "autonomy", "agent_type", "category_id")
-    column_sortable_list = ("id", "name", "status", "complexity", "advantage", "autonomy", "created_at")
+    column_filters = ("status", "premium", "complexity", "advantage", "autonomy", "agent_type", "category_id")
+    column_sortable_list = ("id", "name", "status", "premium", "complexity", "advantage", "autonomy", "created_at")
     column_default_sort = ("id", False)
     column_labels = {
         "category_id": "Category",
@@ -194,7 +210,7 @@ class AgentModelView(ModelView):
     # Form layout
     form_columns = (
         "name", "url", "description",
-        "agent_type", "category_id", "status",
+        "agent_type", "category_id", "status", "premium",
         "advantage", "complexity", "autonomy",
         "stages", "key_features", "rationale",
     )
@@ -320,7 +336,11 @@ AGENT_CATEGORY_SEED = {
 @app.context_processor
 def inject_globals():
     pending_count = Agent.query.filter_by(status="pending").count()
-    return {"pending_count": pending_count, "today": date.today()}
+    return {
+        "pending_count": pending_count,
+        "today": date.today(),
+        "has_premium_access": has_premium_access,
+    }
 
 
 # ─── Auth ────────────────────────────────────────────────────────────────────
@@ -645,6 +665,7 @@ def edit_save(agent_id):
 def agent_detail(agent_id):
     agent = Agent.query.get_or_404(agent_id)
     classified_count = Agent.query.filter_by(status="classified").count()
+    locked = bool(agent.premium and not has_premium_access())
     return render_template(
         "agent_detail.html",
         agent=agent,
@@ -653,6 +674,7 @@ def agent_detail(agent_id):
         advantage_labels=dict(ADVANTAGES),
         category_map=CATEGORY_MAP,
         classified_count=classified_count,
+        locked=locked,
     )
 
 
@@ -749,6 +771,7 @@ def delete_agent(agent_id):
 # ─── Exports ─────────────────────────────────────────────────────────────────
 
 @app.route("/export/excel")
+@premium_required
 def export_excel():
     agents = Agent.query.filter_by(status="classified").all()
     buf = build_excel(agents)
@@ -762,6 +785,7 @@ def export_excel():
 
 
 @app.route("/export/pdf")
+@premium_required
 def export_pdf():
     agents   = Agent.query.filter_by(status="classified").all()
     buf      = build_pdf(agents)
@@ -771,6 +795,7 @@ def export_pdf():
 
 
 @app.route("/export/word")
+@premium_required
 def export_word():
     agents = Agent.query.filter_by(status="classified").all()
     buf = build_word(agents)
@@ -814,9 +839,20 @@ def guide():
     )
 
 
-# ─── Framework ───────────────────────────────────────────────────────────────
+# ─── Landing ──────────────────────────────────────────────────────────────────
 
 @app.route("/")
+def landing():
+    return render_template("landing.html")
+
+
+@app.route("/subscribe")
+def subscribe():
+    return render_template("subscribe.html")
+
+
+# ─── Framework ───────────────────────────────────────────────────────────────
+
 @app.route("/framework")
 def framework():
     return render_template("framework.html", categories=CATEGORIES)
@@ -899,12 +935,22 @@ UNCATEGORIZED_AGENTS = [
 
 def _migrate_db():
     """Add missing columns and re-apply category assignments from current taxonomy."""
-    from sqlalchemy import text
+    from sqlalchemy import inspect, text
+    dialect = db.engine.dialect.name
     with db.engine.connect() as conn:
-        cols = [row[1] for row in conn.execute(text("PRAGMA table_info(agents)")).fetchall()]
-        if "category_id" not in cols:
-            conn.execute(text("ALTER TABLE agents ADD COLUMN category_id VARCHAR(50)"))
-            conn.commit()
+        if dialect == "postgresql":
+            # IF NOT EXISTS is atomic at the DB level — safe against multiple
+            # gunicorn workers running this at boot concurrently.
+            conn.execute(text("ALTER TABLE agents ADD COLUMN IF NOT EXISTS category_id VARCHAR(50)"))
+            conn.execute(text("ALTER TABLE agents ADD COLUMN IF NOT EXISTS premium BOOLEAN NOT NULL DEFAULT FALSE"))
+        else:
+            # SQLite has no "ADD COLUMN IF NOT EXISTS"; fine since local dev is single-process.
+            cols = [c["name"] for c in inspect(db.engine).get_columns("agents")]
+            if "category_id" not in cols:
+                conn.execute(text("ALTER TABLE agents ADD COLUMN category_id VARCHAR(50)"))
+            if "premium" not in cols:
+                conn.execute(text("ALTER TABLE agents ADD COLUMN premium BOOLEAN NOT NULL DEFAULT 0"))
+        conn.commit()
         # Unconditionally update all known agent categories (overwrites stale assignments)
         for name, cat_id in AGENT_CATEGORY_SEED.items():
             conn.execute(
@@ -923,9 +969,11 @@ def _migrate_db():
         conn.commit()
 
 
+# Runs on import (so gunicorn workers initialize the DB too, not just `python app.py`).
+with app.app_context():
+    db.create_all()
+    seed_database(app, db, Agent)
+    _migrate_db()
+
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
-        seed_database(app, db, Agent)
-        _migrate_db()
     app.run(debug=True, port=5000)

@@ -56,10 +56,44 @@ Extended `docs/PANTHERA_INSIGHTS_PLAN.md` with four new sections (§12–§15) t
 - `ai_agent_classifier/templates/matrix.html`, `agent_detail.html` — Quick Add button/modal, Full Wizard link, pending banner, Classify/Edit buttons, Pipeline breadcrumb hidden for non-admins (these leaked into public pages even though the underlying routes were already locked down server-side).
 - `ai_agent_classifier/requirements.txt` — added `flask-login`.
 
-**Bug found & fixed:** `requirements.txt` was never tracked by git — the existing `.gitignore` rule `ai_agent_classifier/*.txt` (meant for scratch debug logs) was silently also matching the dependency manifest, so it had never reached a commit and Railway's Nixpacks build was never actually installing from it (README's manual `pip install flask flask-sqlalchemy ...` instructions were a workaround for this, not a style choice). Fixed by adding `!ai_agent_classifier/requirements.txt` to `.gitignore` right after the wildcard rule. This means `flask-login` (and any future dependency) would not have reached the production deploy without this fix.
+**Bug found & fixed (round 1, incomplete):** `ai_agent_classifier/requirements.txt` was never tracked by git — caught by the `.gitignore` rule `ai_agent_classifier/*.txt` (meant for scratch debug logs). Added a `!ai_agent_classifier/requirements.txt` exception. This turned out not to be the actual deploy mechanism — see the 06-26 follow-up below.
 
 **Verification:** Ran the app locally and curl-tested all three identities (anonymous, `visitor` role, `admin` role) against the locked-down routes and the UI-leak fixes; confirmed 403/redirect-to-login for non-admins and full access for admin. Test users and DB residue reverted out of the tracked `instance/agents.db` fixture afterward via `git checkout --`.
 
+Committed and pushed as `5f0850e "Step 1 - Panthera Insights"`.
+
+### Follow-up — real root cause of the Railway crash
+
+The round-1 fix didn't actually solve it: Railway crashed with `ModuleNotFoundError: No module named 'flask_login'` right after deploy. Real cause — there are **two** `requirements.txt` files (repo root and `ai_agent_classifier/`); Railway/Nixpacks installs from the **root** one only (confirmed via its commit history, "First Railway Deployment"). `flask-login` had been added to the nested file, which Railway never reads. The root file was also missing `psycopg2-binary` despite prod using Postgres — a second crash waiting to happen right after the first was fixed.
+
+**Fixed by:** adding `flask-login` + `psycopg2-binary` to the root `requirements.txt`, deleting the nested duplicate so the two can't drift apart again, dropping the now-pointless `.gitignore` exception, and updating `README.md`'s install instructions/file-structure diagram to point at the single root file. Committed as `a461967 "Phase 1 - debug"`.
+
 **Open items:**
-- Nothing staged or committed yet — `.gitignore`, `requirements.txt` (newly trackable), and all Phase 1 files are sitting as local changes on the `insights` branch pending review.
-- Phases 2–5 (freemium + landing/nav redesign, compare/shortlist, supplier portal, billing) not started.
+- Phases 2–5 (freemium + landing/nav redesign, compare/shortlist, supplier portal, billing) — Phase 2 underway, see below.
+
+---
+
+## 2026-06-26 — Phase 2: Freemium gating + landing page + nav redesign (`insights` branch)
+
+**Summary:** Implemented Phase 2 of `docs/PANTHERA_INSIGHTS_PLAN.md` — the `premium` flag, the teaser/gated agent profile, gated exports, the new `/` marketing landing page, and the buyer-first nav redesign (§12–§14 punchlines/copy).
+
+**Files created:**
+- `ai_agent_classifier/templates/landing.html` — new `/` marketing page (hero, problem, 4-question methodology, 3-card offer, audience cards, neutrality statement, CTA), reusing `framework.html`'s `fw-*` component classes per the plan.
+- `ai_agent_classifier/templates/subscribe.html` — `/subscribe` stub (early-access request via mailto; no real billing yet, per the plan's MVP shortcut).
+
+**Files modified:**
+- `ai_agent_classifier/models.py` — `Agent.premium` (Boolean, default False).
+- `ai_agent_classifier/app.py` — `has_premium_access()` helper (admin or `subscription_active`) and `premium_required` decorator; `/export/*` now gated; `agent_detail` computes and passes `locked`; `/` now serves `landing()` (was aliased to `framework()`), new `/subscribe` route; `premium` added to `AgentModelView` form/list/filters.
+- `ai_agent_classifier/templates/agent_detail.html` — locked agents show a teaser (badges/description visible, Key Features + Analyst Notes + per-metric rationale hidden behind a "Subscribe to unlock" CTA); `★ Premium` chip; Decision GPS gets the §9 "Panthera-affiliated product" disclosure banner.
+- `ai_agent_classifier/templates/base.html` — nav renamed (Matrix → "Explore the Map", Guide → "Find an Agent", Framework → "How it works"); brand logo now links to landing; Exports dropdown only shows for admin/subscribers, replaced by a "Subscribe" link otherwise.
+- `ai_agent_classifier/templates/matrix.html` — found and fixed an Edit-link leak: the badge hover-card "Edit ✎" button was visible to every visitor (not just admins) even though the underlying route was already locked down — same class of leak as the Phase 1 Quick-Add/breadcrumb fixes.
+
+**Bug found & fixed (unrelated to the brief, found while wiring the migration):** `db.create_all()` / `_migrate_db()` only ran inside `if __name__ == "__main__":`, which never executes under `gunicorn app:app` (Railway's actual entry point) — only under `python app.py`. So the `users` table from Phase 1 and the new `premium` column would never have been created in production. Moved the init calls to module level (run on import, so every gunicorn worker initializes the DB). Also made `_migrate_db()` dialect-aware (it used SQLite-only `PRAGMA table_info`, flagged as a risk in the original plan) — Postgres path uses an atomic `ADD COLUMN IF NOT EXISTS` (safe across concurrent workers), SQLite path falls back to an existence check (`IF NOT EXISTS` isn't valid SQLite syntax for `ADD COLUMN`).
+
+**Verification:** Ran locally; marked one agent `premium=True` and created admin/subscriber/visitor test accounts. Confirmed: anonymous and visitor see the locked teaser and get 403 on exports; subscriber and admin see full content and can export; Flask-Admin list/form shows the `premium` toggle; Decision GPS shows the disclosure banner; nav renames and Exports/Subscribe swap render correctly for each role. Test users and the premium flag reverted out of the tracked `instance/agents.db` fixture via `git checkout --`.
+
+**Open items:**
+- Which ~50% of the 77 agents get `premium=True` is a curatorial call left to the admin via Flask-Admin (per the plan) — not auto-assigned.
+- `/subscribe`'s contact address (`insights@panthera.design`) is a placeholder — confirm or change.
+- Phase 3 (Compare & Shortlist) and Phase 4 (Supplier portal) nav items intentionally omitted from the navbar — adding them now would be dead links until those phases land.
+- Nothing committed yet — all Phase 2 changes are local on the `insights` branch pending review.

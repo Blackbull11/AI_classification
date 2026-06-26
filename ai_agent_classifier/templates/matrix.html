@@ -249,7 +249,9 @@
                         {% endif %}
                         <div class="bhc-actions">
                           <a href="{{ url_for('agent_detail', agent_id=agent.id) }}" class="bhc-btn-primary">Details →</a>
-                          <a href="{{ url_for('edit_agent', agent_id=agent.id) }}" class="bhc-btn-secondary">Edit ✎</a>
+                          {% if current_user.is_authenticated and current_user.role == 'admin' %}
+                            <a href="{{ url_for('edit_agent', agent_id=agent.id) }}" class="bhc-btn-secondary">Edit ✎</a>
+                          {% endif %}
                         </div>
                       </div>
                     </div>
@@ -377,7 +379,9 @@
                           {% endif %}
                           <div class="bhc-actions">
                             <a href="{{ url_for('agent_detail', agent_id=agent.id) }}" class="bhc-btn-primary">Details →</a>
-                            <a href="{{ url_for('edit_agent', agent_id=agent.id) }}" class="bhc-btn-secondary">Edit ✎</a>
+                            {% if current_user.is_authenticated and current_user.role == 'admin' %}
+                              <a href="{{ url_for('edit_agent', agent_id=agent.id) }}" class="bhc-btn-secondary">Edit ✎</a>
+                            {% endif %}
                           </div>
                         </div>
                       </div>

@@ -42,6 +42,7 @@ class Agent(db.Model):
     stages = db.Column(db.Text)
     category_id = db.Column(db.String(50))
     status = db.Column(db.String(20), default="pending")
+    premium = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     @property

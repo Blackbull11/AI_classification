@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Subscribe — Panthera Insights{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-4">
+        <h5 class="fw-bold mb-2">Subscribe to Panthera Insights</h5>
+        <p class="text-muted small mb-4">
+          Full agent profiles, analyst rationale, and exportable reports are reserved for subscribers.
+          We're in an early, free-access phase — request access below and we'll activate your account by hand.
+        </p>
+        <a href="mailto:insights@panthera.design?subject=Panthera%20Insights%20—%20Subscription%20request"
+           class="btn w-100" style="background:var(--accent);color:#fff;border:none">
+          Request early access →
+        </a>
+        <p class="text-muted small mt-3 mb-0">
+          Already have an account? <a href="{{ url_for('login') }}" style="color:var(--accent)">Log in</a>.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
