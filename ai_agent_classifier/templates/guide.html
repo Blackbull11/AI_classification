@@ -278,8 +278,11 @@ function updateResults() {
           ${a.description ? `<p class="guide-agent-desc">${esc(a.description)}</p>` : ''}
           ${stageRow}
           ${featList}
-          <a href="/agents/${a.id}"
-             class="btn btn-outline-primary btn-sm w-100 mt-auto">View details →</a>
+          <div class="d-flex gap-2 mt-auto">
+            <a href="/agents/${a.id}"
+               class="btn btn-outline-primary btn-sm flex-fill">View details →</a>
+            ${a.url ? `<a href="${esc(a.url)}" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm" title="Open tool">↗</a>` : ''}
+          </div>
         </div>
       </div>`;
     grid.appendChild(col);
