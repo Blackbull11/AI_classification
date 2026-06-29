@@ -1,0 +1,437 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Enterprise Profile — AI Agent Classifier{% endblock %}
+
+{% block content %}
+{% set cx_label_map = {'black':'Black Swan','dark-grey':'Dark Grey Swan','light-grey':'Light Grey Swan','white':'White Swan'} %}
+{% set stage_label_map = dict(stages) %}
+{% set autonomy_label_map = {'low':'Low','medium':'Medium','high':'High','full':'Fully Autonomous'} %}
+
+<div class="mt-4 mb-3">
+  <h4 class="fw-bold mb-1 page-title">Enterprise Profile</h4>
+  <p class="ent-intro">
+    Mark which AI tools your firm actually has in production today. We'll plot them on the same
+    Complexity × Investment Stage map used across this app, and show you exactly where the coverage
+    gaps are — and which cataloged tools could fill them.
+  </p>
+</div>
+
+<!-- ── Stats row ──────────────────────────────────────────────────────────── -->
+<div class="row g-2 mb-4">
+  <div class="col-6 col-sm-3 col-lg">
+    <div class="card stat-card border-0 shadow-sm h-100">
+      <div class="card-body py-2 px-3">
+        <div class="stat-group-title">Your Stack</div>
+        <div class="stat-value">{{ stack_agents|length }}</div>
+        <div class="stat-label">Tools selected</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-sm-3 col-lg">
+    <div class="card stat-card border-0 shadow-sm h-100">
+      <div class="card-body py-2 px-3">
+        <div class="stat-group-title">Stage Coverage</div>
+        <div class="stat-value" style="color:{% if stages_covered == 7 %}var(--ana){% elif stages_covered == 0 %}var(--beh){% else %}var(--inf){% endif %}">{{ stages_covered }}/7</div>
+        <div class="stat-label">Process stages covered</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-sm-3 col-lg">
+    <div class="card stat-card border-0 shadow-sm h-100">
+      <div class="card-body py-2 px-3">
+        <div class="stat-group-title">Complexity Coverage</div>
+        <div class="stat-value" style="color:{% if tiers_covered == 4 %}var(--ana){% elif tiers_covered == 0 %}var(--beh){% else %}var(--inf){% endif %}">{{ tiers_covered }}/4</div>
+        <div class="stat-label">Swan tiers covered</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-sm-3 col-lg">
+    <div class="card stat-card border-0 shadow-sm h-100">
+      <div class="card-body py-2 px-3">
+        <div class="stat-group-title">Benchmark</div>
+        <div class="stat-value" style="color:var(--accent)">{{ fillable_gaps }}</div>
+        <div class="stat-label">Actionable gaps{% if dead_gaps %} · {{ dead_gaps }} no tool exists{% endif %}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Tool picker ────────────────────────────────────────────────────────── -->
+<div id="picker" class="mb-5">
+  <div class="ent-section-title">Build your stack</div>
+  <p class="ent-section-sub">
+    Check every tool your firm currently uses. Not in the catalogue? Add it as a custom tool —
+    you can finish classifying it later from the Pipeline so it appears on your coverage map.
+  </p>
+
+  <form method="POST" action="{{ url_for('enterprise_save') }}" id="entPickerForm">
+    <div class="ent-picker-toolbar">
+      <input type="text" class="form-control form-control-sm ent-search-input"
+             id="entSearchInput" placeholder="Search tools by name…" />
+      <span class="ent-picker-count"><span id="entCheckedCount">{{ stack_agents|length }}</span> selected</span>
+      <button type="button" class="btn btn-outline-secondary btn-sm ms-auto" data-bs-toggle="modal"
+              data-bs-target="#entQuickAddModal">+ Add a custom tool</button>
+    </div>
+
+    {% if all_agents %}
+      <div class="ent-picker-table-wrap">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th style="width:34px"></th>
+              <th>Name</th>
+              <th>Category</th>
+              <th>Complexity</th>
+              <th>Stage(s)</th>
+              <th>Autonomy</th>
+            </tr>
+          </thead>
+          <tbody id="entPickerBody">
+            {% for agent in all_agents %}
+              <tr class="{% if agent.in_stack %}ent-row-checked{% endif %}{% if agent.status != 'classified' %} ent-row-unclassified{% endif %}"
+                  data-name="{{ agent.name|lower }}">
+                <td>
+                  <input type="checkbox" class="form-check-input ent-tool-checkbox" name="agent_ids"
+                         value="{{ agent.id }}" {% if agent.in_stack %}checked{% endif %} />
+                </td>
+                <td>
+                  <a href="{{ url_for('agent_detail', agent_id=agent.id) }}" class="text-decoration-none fw-medium">{{ agent.name }}</a>
+                  {% if agent.status != 'classified' %}<span class="ent-pending-pill">Unclassified</span>{% endif %}
+                </td>
+                <td>
+                  {% if agent.category_id and agent.category_id in category_map %}
+                    {% set cat = category_map[agent.category_id] %}
+                    <span class="badge px-2 py-1" style="background:{{ cat.color }};color:#fff;font-size:10.5px">{{ cat.label }}</span>
+                  {% else %}<span class="text-muted">—</span>{% endif %}
+                </td>
+                <td class="small">{{ cx_label_map.get(agent.complexity, '—') }}</td>
+                <td class="small">
+                  {%- set sl = [] -%}
+                  {%- for sk in agent.stages_list -%}{%- set _ = sl.append(stage_label_map.get(sk, sk)) -%}{%- endfor -%}
+                  {{ sl|join(', ') if sl else '—' }}
+                </td>
+                <td class="small">{{ autonomy_label_map.get(agent.autonomy, '—') }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div id="entNoMatch" class="text-muted text-center small py-3" style="display:none">No tools match your search.</div>
+
+      <div class="ent-save-bar">
+        <button type="submit" class="btn btn-primary">Save &amp; Benchmark →</button>
+        <span class="text-muted small">Saving updates the coverage map below.</span>
+      </div>
+    {% else %}
+      <p class="text-muted">No agents in the catalogue yet.</p>
+    {% endif %}
+  </form>
+</div>
+
+<!-- ── Benchmark cartography ──────────────────────────────────────────────── -->
+<div id="matrix" class="mb-4">
+  <div class="ent-section-title">Your coverage map</div>
+  <p class="ent-section-sub">
+    The same Complexity × Investment Stage cartography used in the main Matrix — populated only with
+    the classified tools in your stack. Empty cells show a <strong>Find solutions</strong> button when
+    the wider catalogue already has a tool that could fill the gap.
+  </p>
+
+  {% if not stack_classified %}
+    <div class="pending-banner mb-3">
+      Select and save at least one classified tool above to populate your coverage map.
+    </div>
+  {% endif %}
+
+  <div class="matrix-widget mb-3">
+    <div class="matrix-legend">
+      <span class="legend-label">Comparative advantage:</span>
+      <span class="legend-item legend-beh">Behavioral</span>
+      <span class="legend-item legend-ana">Analytical</span>
+      <span class="legend-item legend-inf">Informational</span>
+      <span class="legend-sep">·</span>
+      <span class="legend-label">Autonomy pip:</span>
+      <span class="legend-aut legend-aut-low">Low{{ m.info_icon(autonomy_info.low.title, autonomy_info.low.body) }}</span>
+      <span class="legend-aut legend-aut-med">Medium{{ m.info_icon(autonomy_info.medium.title, autonomy_info.medium.body) }}</span>
+      <span class="legend-aut legend-aut-high">High{{ m.info_icon(autonomy_info.high.title, autonomy_info.high.body) }}</span>
+      <span class="legend-aut legend-aut-full">Fully autonomous{{ m.info_icon(autonomy_info.full.title, autonomy_info.full.body) }}</span>
+    </div>
+    <div class="matrix-scroll">
+      <table class="matrix-table matrix-table-3d">
+        <thead>
+          <tr>
+            <th class="label-col matrix-corner">
+              <span class="small text-muted" style="font-size:9px">
+                Complexity{{ m.info_icon(complexity_dim_info.title, complexity_dim_info.body) }}
+              </span>
+            </th>
+            {% for stage_key, stage_label in stages %}
+              <th class="stage-header stage-cube stage-{{ stage_key }}">
+                {{ stage_label }}{{ m.info_icon(stage_info[stage_key].title, stage_info[stage_key].body) }}
+              </th>
+            {% endfor %}
+            <th class="total-col matrix-total-hdr text-center">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set cx_subtitles = {
+            'black':      'Unknown unknowns',
+            'dark-grey':  'Scarce info / causation-based',
+            'light-grey': 'Noise reduction / simplifying',
+            'white':      'Statistical / deterministic'
+          } %}
+          {% for cx_key, cx_label in complexities %}
+            {% set row_class = {'black':'row-black','dark-grey':'row-dark-grey','light-grey':'row-light-grey','white':'row-white'}[cx_key] %}
+            <tr class="{{ row_class }}">
+              <td class="label-cell lc-{{ cx_key }}">
+                <div class="cx-label-text">
+                  <span class="cx-name fw-bold">{{ cx_label }}{{ m.info_icon(complexity_info[cx_key].title, complexity_info[cx_key].body) }}</span>
+                  <span class="cx-sub d-block">{{ cx_subtitles[cx_key] }}</span>
+                </div>
+              </td>
+
+              {% for stage_key, stage_label in stages %}
+                {% set cell_agents = stack_matrix[cx_key][stage_key] %}
+                {% set gap_key = cx_key ~ '|' ~ stage_key %}
+                {% set candidates = gap_candidates.get(gap_key, []) %}
+                <td class="matrix-cell">
+                  <div class="cell-inner">
+                    {% if cell_agents %}
+                      {% if cell_agents|length > 1 %}<span class="cell-count-badge">×{{ cell_agents|length }}</span>{% endif %}
+                      {% for agent in cell_agents %}
+                        <div class="badge-container" data-adv="{{ agent.advantage }}" data-autonomy="{{ agent.autonomy }}">
+                          {%- set adv_type = agent.advantage -%}
+                          {%- set agt_type = agent.agent_type -%}
+                          <a href="{{ agent.url or '#' }}" target="_blank" rel="noopener"
+                             class="agent-badge badge-{{ adv_type }}-{{ agt_type }}">{{ agent.name }}</a>
+                          <div class="badge-hover-card">
+                            <div class="bhc-name">{{ agent.name }}</div>
+                            <div class="bhc-meta">
+                              {{ (agent.advantage or '')|title }}
+                              {% if agent.agent_type %} · {{ agent.agent_type|replace('-',' ')|title }}{% endif %}
+                              {% if agent.autonomy %} · {{ autonomy_label_map.get(agent.autonomy, agent.autonomy) }} autonomy{% endif %}
+                            </div>
+                            <div class="bhc-actions">
+                              <a href="{{ url_for('agent_detail', agent_id=agent.id) }}" class="bhc-btn-primary">Details →</a>
+                              <form method="POST" action="{{ url_for('enterprise_toggle', agent_id=agent.id) }}" class="d-inline" style="flex:1">
+                                <input type="hidden" name="anchor" value="matrix" />
+                                <button type="submit" class="bhc-btn-secondary w-100">Remove ✕</button>
+                              </form>
+                            </div>
+                          </div>
+                        </div>
+                      {% endfor %}
+                    {% elif candidates %}
+                      {% set panel_id = 'gap-' ~ cx_key ~ '-' ~ stage_key %}
+                      <button type="button" class="gap-search-btn" data-target="{{ panel_id }}">
+                        🔍 Find solutions <span class="gap-count">{{ candidates|length }}</span>
+                      </button>
+                      <div class="gap-panel" id="{{ panel_id }}" style="display:none">
+                        {% for cand in candidates %}
+                          <div class="gap-candidate">
+                            <div class="gap-candidate-name">
+                              <a href="{{ url_for('agent_detail', agent_id=cand.id) }}">{{ cand.name }}</a>
+                              <span class="gap-candidate-meta">
+                                {{ (cand.advantage or '')|title }}{% if cand.agent_type %} · {{ cand.agent_type|replace('-',' ')|title }}{% endif %}
+                              </span>
+                            </div>
+                            <form method="POST" action="{{ url_for('enterprise_toggle', agent_id=cand.id) }}" class="d-inline">
+                              <input type="hidden" name="anchor" value="matrix" />
+                              <button type="submit" class="gap-add-btn">+ Add</button>
+                            </form>
+                          </div>
+                        {% endfor %}
+                      </div>
+                    {% else %}
+                      <span class="empty-circle{% if cx_key == 'black' %} empty-circle-black{% endif %}"
+                            title="No cataloged tool covers this combination yet"></span>
+                      <span class="gap-dead-note">no tool yet</span>
+                    {% endif %}
+                  </div>
+                </td>
+              {% endfor %}
+
+              <td class="total-cell text-center"><strong>{{ stack_row_totals[cx_key] }}</strong></td>
+            </tr>
+          {% endfor %}
+
+          <tr class="totals-row">
+            <td class="label-cell totals-label fw-bold">Total</td>
+            {% for stage_key, stage_label in stages %}
+              <td class="matrix-cell-total text-center fw-bold">{{ stack_col_totals[stage_key] }}</td>
+            {% endfor %}
+            <td class="matrix-cell-total text-center fw-bold">{{ stack_classified|length }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── Coverage scorecard ─────────────────────────────────────────────────── -->
+<div class="row g-3 mb-5">
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <h6 class="card-title fw-bold mb-1">Coverage by process stage</h6>
+        <p class="text-muted small mb-3">Your tools vs. the full {{ catalogue_total }}-agent catalogue, per stage.</p>
+        {% for stage_key, stage_label in stages %}
+          {% set cat_n = catalogue_col_totals[stage_key] %}
+          {% set my_n  = stack_col_totals[stage_key] %}
+          {% set pct = (my_n / cat_n * 100) if cat_n else 0 %}
+          <div class="ent-scorecard-row">
+            <span class="ent-scorecard-name">{{ stage_label }}</span>
+            {% if cat_n %}
+              <span class="ent-scorecard-bar-track">
+                <span class="ent-scorecard-bar" style="width:{{ pct }}%"></span>
+              </span>
+              <span class="ent-scorecard-count {% if my_n > 0 %}ent-scorecard-ok{% else %}ent-scorecard-gap{% endif %}">
+                {{ my_n }} / {{ cat_n }}
+              </span>
+            {% else %}
+              <span class="ent-scorecard-bar-track"></span>
+              <span class="ent-scorecard-count text-muted">no tools</span>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <h6 class="card-title fw-bold mb-1">Coverage by complexity tier</h6>
+        <p class="text-muted small mb-3">Your tools vs. the full {{ catalogue_total }}-agent catalogue, per tier.</p>
+        {% for cx_key, cx_label in complexities %}
+          {% set cat_n = catalogue_row_totals[cx_key] %}
+          {% set my_n  = stack_row_totals[cx_key] %}
+          {% set pct = (my_n / cat_n * 100) if cat_n else 0 %}
+          <div class="ent-scorecard-row">
+            <span class="ent-scorecard-name">{{ cx_label }}</span>
+            {% if cat_n %}
+              <span class="ent-scorecard-bar-track">
+                <span class="ent-scorecard-bar" style="width:{{ pct }}%"></span>
+              </span>
+              <span class="ent-scorecard-count {% if my_n > 0 %}ent-scorecard-ok{% else %}ent-scorecard-gap{% endif %}">
+                {{ my_n }} / {{ cat_n }}
+              </span>
+            {% else %}
+              <span class="ent-scorecard-bar-track"></span>
+              <span class="ent-scorecard-count text-muted">no tools</span>
+            {% endif %}
+          </div>
+        {% endfor %}
+        <div class="detail-divider"></div>
+        <h6 class="card-title fw-bold mb-1" style="font-size:13px">Autonomy mix in your stack</h6>
+        <div class="d-flex gap-2 flex-wrap mt-2">
+          {% for lvl in ['low','medium','high','full'] %}
+            <span class="badge px-2 py-1" style="background:var(--bg-elevated);color:var(--text-secondary);font-size:11px;border:1px solid var(--border)">
+              {{ autonomy_label_map[lvl] }}: {{ autonomy_counts[lvl] }}
+            </span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Add Modal (custom tool → goes straight into the stack) -->
+<div class="modal fade" id="entQuickAddModal" tabindex="-1" aria-labelledby="entQuickAddLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="entQuickAddLabel">Add a custom tool to your stack</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('quick_add') }}" novalidate id="entQuickAddForm">
+        <input type="hidden" name="next" value="enterprise" />
+        <input type="hidden" name="in_stack" value="1" />
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Tool name <span class="text-danger">*</span></label>
+            <input type="text" name="name" class="form-control" required placeholder="e.g. In-house risk monitor" />
+            <div class="invalid-feedback">Tool name is required.</div>
+          </div>
+          <div class="mb-1">
+            <label class="form-label fw-semibold">Source URL</label>
+            <input type="url" name="url" class="form-control" placeholder="https://..." />
+          </div>
+          <p class="text-muted small mb-0">
+            It'll be added to your stack right away. Finish classifying it from the Pipeline so it
+            shows up on the coverage map below.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add to my stack</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Tool picker: search filter + live selected count ──────────────────────
+(function () {
+  const searchInput = document.getElementById('entSearchInput');
+  const rows = document.querySelectorAll('#entPickerBody tr');
+  const noMatch = document.getElementById('entNoMatch');
+  const countEl = document.getElementById('entCheckedCount');
+  const checkboxes = document.querySelectorAll('.ent-tool-checkbox');
+
+  if (searchInput) {
+    searchInput.addEventListener('input', function () {
+      const q = this.value.trim().toLowerCase();
+      let visible = 0;
+      rows.forEach(row => {
+        const show = !q || row.dataset.name.includes(q);
+        row.style.display = show ? '' : 'none';
+        if (show) visible++;
+      });
+      if (noMatch) noMatch.style.display = visible === 0 ? '' : 'none';
+    });
+  }
+
+  function updateCount() {
+    const n = document.querySelectorAll('.ent-tool-checkbox:checked').length;
+    if (countEl) countEl.textContent = n;
+  }
+  checkboxes.forEach(cb => cb.addEventListener('change', updateCount));
+
+  // Quick-add form validation
+  const quickAddForm = document.getElementById('entQuickAddForm');
+  if (quickAddForm) {
+    quickAddForm.addEventListener('submit', function (e) {
+      const nameInput = this.querySelector("input[name='name']");
+      if (!nameInput.value.trim()) {
+        e.preventDefault();
+        nameInput.classList.add('is-invalid');
+      }
+    });
+  }
+})();
+
+// ── Gap-search panel toggle ─────────────────────────────────────────────────
+document.querySelectorAll('.gap-search-btn').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    const panel = document.getElementById(btn.dataset.target);
+    if (!panel) return;
+    const isOpen = panel.style.display !== 'none';
+    document.querySelectorAll('.gap-panel').forEach(p => { p.style.display = 'none'; });
+    document.querySelectorAll('.gap-search-btn').forEach(b => b.classList.remove('active'));
+    if (!isOpen) {
+      panel.style.display = '';
+      btn.classList.add('active');
+    }
+  });
+});
+document.addEventListener('click', function (e) {
+  if (!e.target.closest('.gap-search-btn') && !e.target.closest('.gap-panel')) {
+    document.querySelectorAll('.gap-panel').forEach(p => { p.style.display = 'none'; });
+    document.querySelectorAll('.gap-search-btn').forEach(b => b.classList.remove('active'));
+  }
+});
+</script>
+{% endblock %}

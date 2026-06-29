@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "_macros.html" as m %}
 {% block title %}Matrix — AI Agent Classifier{% endblock %}
 
 {% block content %}
@@ -137,7 +138,7 @@
     <span class="text-muted small" id="filterResultCount" style="display:none"></span>
   </div>
   <div class="d-flex align-items-center gap-2 flex-wrap">
-    <span class="text-muted fw-semibold" style="font-size:12px;white-space:nowrap">Stage view:</span>
+    <span class="text-muted fw-semibold" style="font-size:12px;white-space:nowrap">Stage view:{{ m.info_icon(stage_dim_info.title, stage_dim_info.body) }}</span>
     <div class="stage-filter-group" id="stageFilterGroup">
       {% for stage_key, stage_label in stages %}
       <button class="sf-btn sf-btn-{{ stage_key }}"
@@ -174,19 +175,21 @@
     <span class="legend-item legend-type-inh">In-house</span>
     <span class="legend-item legend-type-aca">Academic</span>
     <span class="legend-sep">·</span>
-    <span class="legend-label">Autonomy pip:</span>
-    <span class="legend-aut legend-aut-low">Low</span>
-    <span class="legend-aut legend-aut-med">Medium</span>
-    <span class="legend-aut legend-aut-high">High</span>
-    <span class="legend-aut legend-aut-full">Fully autonomous</span>
+    <span class="legend-label">Autonomy pip:{{ m.info_icon(autonomy_dim_info.title, autonomy_dim_info.body) }}</span>
+    <span class="legend-aut legend-aut-low">Low{{ m.info_icon(autonomy_info.low.title, autonomy_info.low.body) }}</span>
+    <span class="legend-aut legend-aut-med">Medium{{ m.info_icon(autonomy_info.medium.title, autonomy_info.medium.body) }}</span>
+    <span class="legend-aut legend-aut-high">High{{ m.info_icon(autonomy_info.high.title, autonomy_info.high.body) }}</span>
+    <span class="legend-aut legend-aut-full">Fully autonomous{{ m.info_icon(autonomy_info.full.title, autonomy_info.full.body) }}</span>
   </div>
   <div class="matrix-scroll">
     <table class="matrix-table matrix-table-3d">
       <thead>
         <tr>
-          <th class="label-col matrix-corner"></th>
+          <th class="label-col matrix-corner">
+            <span class="small text-muted" style="font-size:9px">Complexity{{ m.info_icon(complexity_dim_info.title, complexity_dim_info.body) }}</span>
+          </th>
           {% for stage_key, stage_label in stages %}
-            <th class="stage-header stage-cube stage-{{ stage_key }}">{{ stage_label }}</th>
+            <th class="stage-header stage-cube stage-{{ stage_key }}">{{ stage_label }}{{ m.info_icon(stage_info[stage_key].title, stage_info[stage_key].body) }}</th>
           {% endfor %}
           <th class="total-col matrix-total-hdr text-center">Total</th>
         </tr>
@@ -211,7 +214,7 @@
           <!-- Label column -->
           <td class="label-cell lc-{{ cx_key }}">
             <div class="cx-label-text">
-              <span class="cx-name fw-bold">{{ cx_label }}</span>
+              <span class="cx-name fw-bold">{{ cx_label }}{{ m.info_icon(complexity_info[cx_key].title, complexity_info[cx_key].body) }}</span>
               <span class="cx-sub d-block">{{ cx_subtitles[cx_key] }}</span>
             </div>
           </td>
@@ -301,21 +304,21 @@
     <span class="legend-item legend-ana">Analytical</span>
     <span class="legend-item legend-inf">Informational</span>
     <span class="legend-sep">·</span>
-    <span class="legend-label">Label color (complexity):</span>
-    <span class="legend-cx-text legend-cx-text-black">Black Swan</span>
-    <span class="legend-cx-text legend-cx-text-dark-grey">Dark Grey</span>
-    <span class="legend-cx-text legend-cx-text-light-grey">Light Grey</span>
-    <span class="legend-cx-text legend-cx-text-white">White Swan</span>
+    <span class="legend-label">Label color (complexity):{{ m.info_icon(complexity_dim_info.title, complexity_dim_info.body) }}</span>
+    <span class="legend-cx-text legend-cx-text-black">Black Swan{{ m.info_icon(complexity_info.black.title, complexity_info.black.body) }}</span>
+    <span class="legend-cx-text legend-cx-text-dark-grey">Dark Grey{{ m.info_icon(complexity_info['dark-grey'].title, complexity_info['dark-grey'].body) }}</span>
+    <span class="legend-cx-text legend-cx-text-light-grey">Light Grey{{ m.info_icon(complexity_info['light-grey'].title, complexity_info['light-grey'].body) }}</span>
+    <span class="legend-cx-text legend-cx-text-white">White Swan{{ m.info_icon(complexity_info.white.title, complexity_info.white.body) }}</span>
     <span class="legend-sep">·</span>
     <span class="legend-item legend-type-com">Commercial</span>
     <span class="legend-item legend-type-inh">In-house</span>
     <span class="legend-item legend-type-aca">Academic</span>
     <span class="legend-sep">·</span>
-    <span class="legend-label">Autonomy pip:</span>
-    <span class="legend-aut legend-aut-low">Low</span>
-    <span class="legend-aut legend-aut-med">Medium</span>
-    <span class="legend-aut legend-aut-high">High</span>
-    <span class="legend-aut legend-aut-full">Fully autonomous</span>
+    <span class="legend-label">Autonomy pip:{{ m.info_icon(autonomy_dim_info.title, autonomy_dim_info.body) }}</span>
+    <span class="legend-aut legend-aut-low">Low{{ m.info_icon(autonomy_info.low.title, autonomy_info.low.body) }}</span>
+    <span class="legend-aut legend-aut-med">Medium{{ m.info_icon(autonomy_info.medium.title, autonomy_info.medium.body) }}</span>
+    <span class="legend-aut legend-aut-high">High{{ m.info_icon(autonomy_info.high.title, autonomy_info.high.body) }}</span>
+    <span class="legend-aut legend-aut-full">Fully autonomous{{ m.info_icon(autonomy_info.full.title, autonomy_info.full.body) }}</span>
   </div>
   <div class="matrix-scroll">
     {% set complexity_map = dict(complexities) %}
@@ -329,7 +332,7 @@
         <tr>
           <th class="label-col matrix-corner"></th>
           {% for stage_key, stage_label in stages %}
-            <th class="stage-header stage-cube stage-{{ stage_key }}">{{ stage_label }}</th>
+            <th class="stage-header stage-cube stage-{{ stage_key }}">{{ stage_label }}{{ m.info_icon(stage_info[stage_key].title, stage_info[stage_key].body) }}</th>
           {% endfor %}
           <th class="total-col matrix-total-hdr text-center">Total</th>
         </tr>
@@ -408,11 +411,13 @@
 <!-- Scatter View -->
 <div id="scatterView" class="scatter-widget mb-4" style="display:none">
   <div class="scatter-legend">
-    <span class="legend-label">Fill (complexity):</span>
-    <span class="scatter-cx-item scatter-cx-black">Black Swan</span>
-    <span class="scatter-cx-item scatter-cx-dark-grey">Dark Grey</span>
-    <span class="scatter-cx-item scatter-cx-light-grey">Light Grey</span>
-    <span class="scatter-cx-item scatter-cx-white">White Swan</span>
+    <span class="legend-label">Fill (complexity):{{ m.info_icon(complexity_dim_info.title, complexity_dim_info.body) }}</span>
+    <span class="scatter-cx-item scatter-cx-black">Black Swan{{ m.info_icon(complexity_info.black.title, complexity_info.black.body) }}</span>
+    <span class="scatter-cx-item scatter-cx-dark-grey">Dark Grey{{ m.info_icon(complexity_info['dark-grey'].title, complexity_info['dark-grey'].body) }}</span>
+    <span class="scatter-cx-item scatter-cx-light-grey">Light Grey{{ m.info_icon(complexity_info['light-grey'].title, complexity_info['light-grey'].body) }}</span>
+    <span class="scatter-cx-item scatter-cx-white">White Swan{{ m.info_icon(complexity_info.white.title, complexity_info.white.body) }}</span>
+    <span class="legend-sep">·</span>
+    <span class="legend-label">Y-axis (autonomy):{{ m.info_icon(autonomy_dim_info.title, autonomy_dim_info.body) }}</span>
     <span class="legend-sep">·</span>
     <span class="legend-label">Border color (advantage):</span>
     <span class="legend-item legend-beh">Behavioral</span>
