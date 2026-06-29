@@ -5,8 +5,9 @@
 **Panthera AI Agent Classifier** — a Flask web application for cataloguing, classifying, and exporting AI agents used in investment management. Built for the Panthera Group, it maps commercial, in-house, and academic AI systems against the firm's proprietary **Swan Theory** complexity framework and a 7-stage investment process pipeline.
 
 - **Entry point**: `ai_agent_classifier/app.py` → `python app.py` (port 5000)
-- **Database**: SQLite at `ai_agent_classifier/instance/agents.db`
-- **Framework**: Flask + SQLAlchemy (Python) · Bootstrap 5.3.3 dark theme (frontend)
+- **Landing page**: `/` and `/framework` both serve the framework explainer (`framework()`); the classification matrix lives at `/matrix`
+- **Database**: SQLite at `ai_agent_classifier/instance/agents.db` for local dev; **PostgreSQL in production** (Railway) via the `DATABASE_URL` env var — see [Deployment](#deployment)
+- **Framework**: Flask + SQLAlchemy (Python) · Bootstrap 5.3.3 dark theme (frontend) · Flask-Admin CRUD panel at `/admin`
 
 ---
 
@@ -15,52 +16,72 @@
 | Layer | Technology |
 |---|---|
 | Web framework | Flask |
-| ORM / DB | SQLAlchemy + SQLite |
+| ORM / DB | SQLAlchemy — SQLite (local dev) or PostgreSQL (production, via `DATABASE_URL`) |
+| Admin CRUD | Flask-Admin (`/admin`, `AgentModelView`) |
 | Frontend | Bootstrap 5.3.3 + vanilla JS |
 | AI auto-classifier | Anthropic Claude API (`claude-opus-4-8`) |
 | Excel export | openpyxl |
 | Word export | python-docx |
 | PDF export | reportlab |
+| Production server | gunicorn (`Procfile`), deployed on Railway |
 
-**Dependencies**: `ai_agent_classifier/requirements.txt`  
-`pip install flask flask-sqlalchemy python-docx openpyxl reportlab anthropic`
+**Dependencies**: `requirements.txt` (repo root — installed before `cd ai_agent_classifier` per `Procfile`)  
+`pip install flask flask-sqlalchemy flask-admin python-docx openpyxl reportlab anthropic gunicorn`
 
 For auto-classification, set env var:
 ```
 ANTHROPIC_API_KEY=sk-...
 ```
 
+For a PostgreSQL backend (Railway or otherwise), set:
+```
+DATABASE_URL=postgresql://...
+```
+> **Known gap**: `requirements.txt` does not pin `psycopg2-binary`, which `SQLALCHEMY_DATABASE_URI` needs to actually connect to a `postgresql://` URL. Install it manually until this is added. See Known Issues in `DEV_LOG.md`.
+
 ---
 
 ## File Structure
 
+> **Note**: `CLAUDE.md`, `DEV_LOG.md`, and `CLASSIFICATION_GUIDE.md` physically live under `docs/`, not at the repo root. `requirements.txt` and `Procfile` must stay at the repo root for Railway's buildpack to find them.
+
 ```
 AI_classification/
-├── CLAUDE.md                      ← this file
-├── DEV_LOG.md                     ← rolling development log
-├── CLASSIFICATION_GUIDE.md        ← Swan Theory framework documentation
+├── README.md
+├── requirements.txt                ← pip dependencies (installed from repo root)
+├── Procfile                        ← Railway/gunicorn start command
+├── docs/
+│   ├── CLAUDE.md                   ← this file
+│   ├── DEV_LOG.md                  ← rolling development log
+│   ├── CLASSIFICATION_GUIDE.md     ← Swan Theory framework documentation
+│   └── screenshots/                ← matrix, framework, guide, autonomy, advantage, pdf_export PNGs
+├── presentation/
+│   ├── build_deck.py               ← python-pptx generator for the stakeholder deck
+│   └── Panthera_AI_Agent_Classifier.pptx
 └── ai_agent_classifier/
-    ├── app.py                     ← Flask routes + session wizard logic
-    ├── models.py                  ← SQLAlchemy Agent model
-    ├── auto_classify.py           ← Claude API batch classifier
-    ├── exports.py                 ← Excel / Word / PDF export engine
-    ├── build_agents_db.py         ← Seed 40+ pre-classified agents
-    ├── seed_data.py               ← Legacy seed (disabled, returns early)
-    ├── requirements.txt
+    ├── app.py                      ← Flask routes + session wizard logic
+    ├── models.py                   ← SQLAlchemy Agent model
+    ├── auto_classify.py            ← Claude API batch classifier
+    ├── exports.py                  ← Excel / Word / PDF export engine
+    ├── build_agents_db.py          ← Seeds ~78 pre-classified agents (idempotent — safe to re-run)
+    ├── migrate_to_postgres.py      ← one-time SQLite → Railway PostgreSQL data copy
+    ├── seed_data.py                ← Legacy seed (disabled, returns early)
     ├── instance/
-    │   └── agents.db              ← SQLite database
+    │   └── agents.db               ← SQLite database (local dev only; production uses PostgreSQL)
     ├── static/
-    │   ├── css/style.css          ← Design system (CSS custom properties)
-    │   ├── js/app.js              ← Bootstrap tooltip init + flash dismiss
-    │   └── img/                   ← Panthera logo (PNG + SVG)
+    │   ├── css/style.css           ← Design system (CSS custom properties)
+    │   ├── js/app.js               ← Bootstrap tooltip init + flash dismiss
+    │   └── img/                    ← Panthera logo (PNG + SVG)
     └── templates/
-        ├── base.html              ← Master layout (navbar, flash messages)
-        ├── matrix.html            ← Multi-dimensional classification matrix (3D-cube visual) + autonomy scatter
-        ├── pipeline.html          ← Agent lifecycle management table
-        ├── wizard.html            ← 4-step classification wizard
-        ├── agent_detail.html      ← Per-agent profile view
-        └── guide.html             ← Agent Finder — 4-step questionnaire + filtered results
+        ├── base.html               ← Master layout (navbar, flash messages)
+        ├── framework.html          ← Landing page (`/`, `/framework`) — 5-dimension explainer + category cluster
+        ├── matrix.html             ← Classification matrix (`/matrix`): Complexity×Stage / Stage×Advantage / Autonomy Scatter views
+        ├── pipeline.html           ← Agent lifecycle management table
+        ├── wizard.html             ← 4-step classification wizard
+        ├── agent_detail.html       ← Per-agent profile view
+        └── guide.html              ← Agent Finder — 5-step questionnaire (stage, advantage, autonomy, complexity, category)
 ```
+> Also tracked in git but not part of the running application: `ai_agent_classifier/agents_production.db`, `instance/agents copy.db`, `instance/agents_broken.db`, `instance/agents_temp.db`, `instance/agents_b64.txt` — leftover artifacts from the PostgreSQL migration. See Known Issues in `DEV_LOG.md`.
 
 ---
 
@@ -81,6 +102,7 @@ AI_classification/
 | `agent_type` | TEXT | `commercial` · `in-house` · `academic` |
 | `complexity` | TEXT | `white` · `light-grey` · `dark-grey` · `black` |
 | `stages` | TEXT | JSON array of stage keys |
+| `category_id` | TEXT | One of the 10 `CATEGORIES` ids defined in `app.py` (CAT-1…CAT-10), or `NULL` if uncategorized |
 | `status` | TEXT NOT NULL | `pending` · `classified` · `rejected` |
 | `created_at` | DATETIME | UTC creation timestamp |
 
@@ -145,6 +167,25 @@ Only **one** advantage per agent.
 | `in-house` | Built internally by firm |
 | `academic` | Research paper / prototype |
 
+### Category Label (10 categories)
+
+A functional cluster describing the agent's primary role in the investment workflow, independent of the four core dimensions above. Defined as the `CATEGORIES` list in `app.py` (id, label, fullName, color, description) and assigned via `AGENT_CATEGORY_SEED` (name → category id) applied by `_migrate_db()` at startup. Selectable as a `<select>` in wizard step 1 and as a Q5 filter chip in the Guide.
+
+| ID | Category |
+|---|---|
+| CAT-1 | Autonomous Trading Engines |
+| CAT-2 | AI Execution Optimizers |
+| CAT-3 | Agentic Quant Research Systems |
+| CAT-4 | Quantitative Signal & Screening Tools |
+| CAT-5 | AI Portfolio Construction & Management |
+| CAT-6 | Investment Research & Document Intelligence |
+| CAT-7 | Market Intelligence & Real-Time Monitoring |
+| CAT-8 | Risk, AML & Surveillance Monitors |
+| CAT-9 | ESG & Regulatory Compliance Platforms |
+| CAT-10 | Client & Stakeholder Intelligence |
+
+Some agents (general-purpose bank LLM suites, e.g. Goldman Sachs AI Assistant, JPMorgan LLM Suite) are intentionally left uncategorized — listed in `UNCATEGORIZED_AGENTS` — to avoid forcing a poor fit. **`auto_classify.py` does not assign `category_id`** — it is set only via seed data or manual edit. Full taxonomy history (CAT-5 dissolution, renames) is in `DEV_LOG.md` under "Taxonomy v2".
+
 ---
 
 ## Flask Routes
@@ -152,9 +193,10 @@ Only **one** advantage per agent.
 ### Pages
 | Method | Path | Function | Description |
 |---|---|---|---|
-| GET | `/` | `matrix()` | Multi-dimensional classification matrix + autonomy scatter view |
+| GET | `/`, `/framework` | `framework()` | Landing page — 5-dimension framework explainer + category cluster |
+| GET | `/matrix` | `matrix()` | Classification matrix — Complexity×Stage, Stage×Advantage, and Autonomy Scatter views |
 | GET | `/pipeline` | `pipeline()` | Agent lifecycle table |
-| GET | `/guide` | `guide()` | Agent Finder — 4-step questionnaire, JS-filtered results |
+| GET | `/guide` | `guide()` | Agent Finder — 5-step questionnaire, JS-filtered results |
 | GET | `/add` | `add_agent()` | Start full wizard (add mode) |
 | POST | `/add/step/<n>` | `add_step()` | Wizard step n (1–4) |
 | POST | `/add/save` | `add_save()` | Save new agent (status: classified) |
@@ -186,6 +228,11 @@ Only **one** advantage per agent.
 |---|---|---|
 | GET | `/api/agents` | JSON array of all agents with all fields |
 
+### Admin
+| Method | Path | Description |
+|---|---|---|
+| GET/POST | `/admin` | Flask-Admin (`AgentModelView`) — searchable/filterable CRUD over the `agents` table, with dropdowns for enum fields and JSON validation on the three JSON columns. **No authentication** — see Known Issues in `DEV_LOG.md`. |
+
 ---
 
 ## Wizard Flow (4 Steps)
@@ -194,7 +241,7 @@ Used for **add**, **edit**, and **classify** modes. State stored in `session['wi
 
 | Step | Fields |
 |---|---|
-| 1 | name, url, description, agent_type |
+| 1 | name, url, description, agent_type, category_id (select) |
 | 2 | stages (checkboxes, ≥1 required) |
 | 3 | complexity, advantage, autonomy (radios) |
 | 4 | rationale (6 text fields), key_features (3-6 repeating) |
@@ -267,13 +314,16 @@ All three formats export **classified agents only** (status = "classified").
 - `.badge-hover-card` — tooltip on badge hover
 - `.stage-option`, `.cx-option` — wizard radio/checkbox labels
 - `.scatter-widget` — autonomy scatter SVG container
-- `.view-toggle-group`, `.vt-btn` — matrix / scatter view switcher
+- `.view-toggle-group`, `.vt-btn` — matrix / stage×advantage / scatter view switcher (`data-view="matrix|advmatrix|scatter"`)
+- `.guide-cat-chip.selected` — category filter chip in Guide Q5, color driven by `--cat-chip-color` custom property set via JS
+- `.guide-cat-label` — small category label shown on Guide result cards
+- `.detail-category-card`, `.detail-category-value` — category block on the agent detail sidebar
 
 ---
 
 ## Pre-Classified Agent Catalogue
 
-The live database (`agents.db`) contains **77 classified agents**. `build_agents_db.py` seeds the initial set; subsequent agents were added via the wizard and auto-classifier.
+The local database (`agents.db`) currently holds **81 agents — 78 classified, 1 pending, 2 rejected**. `build_agents_db.py` seeds the initial set (idempotent — checks for existing names before inserting); subsequent agents were added via the wizard and auto-classifier. Production (Railway) runs against PostgreSQL and may have drifted from this local snapshot — see [Deployment](#deployment).
 
 Notable entries: AIEQ/EquBot · Numerai · Kavout K-Score · RavenPack · Kensho · AlphaSense · Dataminr · BlackRock Aladdin Copilot · BlackRock AlphaAgents · FinGPT/FinMem · BloombergGPT/ASKB · FactSet Mercury · Morningstar Mo · Goldman Sachs AI Assistant · JPMorgan LLM Suite · JPMorgan LOXM · Hebbia · Morgan Stanley AI Assistant · Morgan Stanley Debrief · Panthera Decision GPS · Shavandi & Khedmati Multi-Agent DRL · MSCI AI Portfolio Insights · Clarity AI · NICE Actimize SURVEIL-X · Behavox · Ayasdi · Blueflame AI · IndexGPT/COIN · ShareWorks/Equity Edge · Citi Sky/Arc · Aiden · TOGGLE Copilot · InvestGPT · Pluto.fi · Portrait Analytics · Terminal X · Bridget/ThemeWise · ARKEN Finance · and more
 
@@ -292,3 +342,24 @@ Notable entries: AIEQ/EquBot · Numerai · Kavout K-Score · RavenPack · Kensho
 - **Autonomy pip uses CSS `::after`**: The matrix pip indicator is a pseudo-element on `.agent-badge` inside `.matrix-table-3d .badge-container[data-autonomy="..."]`. No extra HTML — just a `data-autonomy` attribute on the container drives all four colors. Scoped to the matrix table so it doesn't affect badges elsewhere.
 - **`full` autonomy threshold**: Reserved for live-deployed systems with **zero** human veto on individual decisions. "High" autonomy is for systems that execute within human-set parameters (LOXM, Aiden). "Full" is for systems where the AI owns the entire decision loop (AIEQ, Numerai).
 - **Scatter view groups**: Ordered `full → high → medium → low` top-to-bottom; fully autonomous agents always appear in their own crimson-labeled group at the top.
+- **Dual database backend via `DATABASE_URL`**: `app.py` reads `DATABASE_URL` and falls back to local SQLite if unset; `postgres://` is rewritten to `postgresql://` because SQLAlchemy 1.4+ dropped the old scheme. Lets the same codebase run locally (SQLite) and on Railway (Postgres) with no code changes.
+- **Category migration is unconditional, not additive**: `_migrate_db()` re-applies every `AGENT_CATEGORY_SEED` mapping and clears dissolved/explicitly-uncategorized agents on every startup, so a taxonomy rename/restructure (see "Taxonomy v2" in `DEV_LOG.md`) propagates automatically without a manual data-fix script.
+- **Landing page is the framework explainer, not the matrix**: `/` and `/framework` both render `framework.html`; the matrix moved to `/matrix` (see `DEV_LOG.md`, "Framework as landing page"). Anything that does `url_for('matrix')` still resolves correctly.
+
+---
+
+## Deployment
+
+Live instance: see the link in `README.md`. Hosted on **Railway**, started via `Procfile`:
+```
+web: cd ai_agent_classifier && gunicorn app:app --bind 0.0.0.0:$PORT --workers 2
+```
+
+**Required env vars in production**:
+| Var | Purpose |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection string (Railway-provisioned) |
+| `SECRET_KEY` | Flask session secret (falls back to `os.urandom(24)` if unset — sessions won't survive a restart without this) |
+| `ANTHROPIC_API_KEY` | Only needed if running `auto_classify.py` against the deployed environment |
+
+**Migrating data**: `migrate_to_postgres.py` is a one-time script that copies all rows from local `instance/agents.db` into the Postgres `DATABASE_URL` target, creating the table if missing and re-syncing the `id` sequence. It is not run automatically — invoke manually when seeding a fresh Postgres instance from local data.

@@ -133,6 +133,224 @@ CATEGORIES = [
 CATEGORY_MAP = {c["id"]: c for c in CATEGORIES}
 
 
+# ─── Plain-language help text (powers the "?" hover bubbles across the app) ──
+
+COMPLEXITY_DIMENSION_INFO = {
+    "title": "Complexity Tier — how predictable is this problem?",
+    "body": (
+        "Asks one question: how well can we know the range of likely outcomes? "
+        "There are 4 tiers, from fully predictable (White Swan) to genuinely "
+        "unprecedented (Black Swan).\n\n"
+        "It matters because the right AI approach is different at each tier — a "
+        "tool built for predictable problems can be actively misleading when "
+        "pointed at an unprecedented one. Hover any tier name to see its definition."
+    ),
+}
+
+COMPLEXITY_INFO = {
+    "white": {
+        "label": "White Swan",
+        "title": "White Swan — predictable, the rules are known",
+        "blurb": "Predictable — the rules are known.",
+        "body": (
+            "Outcomes and their odds can be measured directly from real data. "
+            "This is the safest zone for AI: statistical models and automation "
+            "don't just work here, they typically beat human judgement.\n\n"
+            "Example: trade execution cost optimization, options pricing, "
+            "compliance rule-checks."
+        ),
+    },
+    "light-grey": {
+        "label": "Light Grey Swan",
+        "title": "Light Grey Swan — noisy, the pattern is hidden",
+        "blurb": "Noisy — the pattern exists, but it's hidden.",
+        "body": (
+            "A real signal exists in the data, but it's buried in noise or keeps "
+            "shifting over time. Machine learning is needed to find it — and the "
+            "result should be treated as a probability, not a certainty.\n\n"
+            "Example: news-sentiment trading signals, factor-based stock screening."
+        ),
+    },
+    "dark-grey": {
+        "label": "Dark Grey Swan",
+        "title": "Dark Grey Swan — understood, but not measurable",
+        "blurb": "Understood, but not measurable.",
+        "body": (
+            "We can reason about the likely causes and effects, but there isn't "
+            "enough clean data for a reliable statistical model. This calls for "
+            "scenario analysis and expert judgement, with AI as a research "
+            "assistant rather than a decision-maker.\n\n"
+            "Example: macro regime shifts, geopolitical risk, early-stage credit risk."
+        ),
+    },
+    "black": {
+        "label": "Black Swan",
+        "title": "Black Swan — unprecedented, no track record",
+        "blurb": "Unprecedented — no track record to learn from.",
+        "body": (
+            "A genuinely novel situation with no comparable historical pattern. "
+            "Any model trained on the past is guessing. Human judgement should "
+            "lead, with AI used only to support — never replace — that judgement.\n\n"
+            "Example: an unprecedented market crisis, a brand-new fraud pattern."
+        ),
+    },
+}
+
+AUTONOMY_DIMENSION_INFO = {
+    "title": "Autonomy — how much human oversight remains?",
+    "body": (
+        "Measures how much a human has to sign off before this tool's output "
+        "becomes a real action — from \"AI only assists\" (Low) to \"AI acts with "
+        "no human veto at all\" (Fully Autonomous).\n\n"
+        "This is usually the first thing a risk or compliance reviewer asks "
+        "about a new AI tool. Hover any level to see its definition."
+    ),
+}
+
+AUTONOMY_INFO = {
+    "low": {
+        "label": "Low",
+        "title": "Low autonomy — AI assists, a human decides",
+        "blurb": "AI assists — a human decides everything.",
+        "body": (
+            "The tool surfaces information, flags, or suggestions. Every action "
+            "is reviewed and approved by a person before anything happens. The "
+            "safest level, and the right default for high-stakes or "
+            "poorly-understood situations.\n\n"
+            "Example: a research copilot that summarizes filings for an analyst."
+        ),
+    },
+    "medium": {
+        "label": "Medium",
+        "title": "Medium autonomy — AI recommends, a human signs off",
+        "blurb": "AI recommends — a human signs off.",
+        "body": (
+            "The tool proposes a specific action (a trade, a rebalancing, a "
+            "flag), but a person must actively approve it before it takes "
+            "effect. Faster than Low, but a human is still the final checkpoint "
+            "on every decision.\n\n"
+            "Example: a rebalancing suggestion a PM has to click \"approve\" on."
+        ),
+    },
+    "high": {
+        "label": "High",
+        "title": "High autonomy — AI acts within limits a human set",
+        "blurb": "AI acts — within limits a human already set.",
+        "body": (
+            "The tool executes on its own, but only inside boundaries a human "
+            "configured in advance (position limits, venues, price bands). "
+            "Humans monitor outcomes and can intervene, but don't approve each "
+            "individual action.\n\n"
+            "Example: an execution algorithm working a large order across venues."
+        ),
+    },
+    "full": {
+        "label": "Fully Autonomous",
+        "title": "Fully Autonomous — AI owns the decision, no veto",
+        "blurb": "AI owns the decision — no human veto.",
+        "body": (
+            "There is no human checkpoint on individual decisions — the system "
+            "decides and acts on real capital end-to-end. The highest-stakes "
+            "level, and deserves the most scrutiny before adoption: understand "
+            "exactly how it fails, not just how it succeeds.\n\n"
+            "Example: a fully automated trading model managing its own book live."
+        ),
+    },
+}
+
+STAGE_DIMENSION_INFO = {
+    "title": "Investment Process Stage — where does this tool act?",
+    "body": (
+        "Where in the investment lifecycle a tool actually does its work — "
+        "from spotting an opportunity to reporting results to clients. There "
+        "are 7 stages, and a single tool can cover more than one. Hover any "
+        "stage name to see what happens there."
+    ),
+}
+
+STAGE_INFO = {
+    "idea-gen": {
+        "label": "Idea Generation",
+        "title": "Idea Generation — where opportunities are first spotted",
+        "blurb": "Where opportunities are first spotted.",
+        "body": (
+            "The top of the funnel: screening the market, scanning data, or "
+            "generating hypotheses about what to invest in. AI widens the "
+            "universe a person could realistically search by hand.\n\n"
+            "Typical output: a candidate list, a sourced lead, a flagged anomaly."
+        ),
+    },
+    "idea-assess": {
+        "label": "Idea Assessment",
+        "title": "Idea Assessment — where an idea gets tested before it's trusted",
+        "blurb": "Where an idea gets tested before it's trusted.",
+        "body": (
+            "Once an idea exists, it has to be researched, valued, and "
+            "stress-tested against the portfolio's existing constraints. AI "
+            "accelerates the depth and speed of this due diligence.\n\n"
+            "Typical output: financial models, comparable-company analysis, "
+            "document review."
+        ),
+    },
+    "decision": {
+        "label": "Decision Point",
+        "title": "Decision Point — where capital actually gets committed",
+        "blurb": "Where capital actually gets committed.",
+        "body": (
+            "The formal buy / sell / hold / size call. The highest-stakes, most "
+            "human-judgement-heavy stage in the process — AI should support this "
+            "decision, not make it alone, especially outside the White Swan tier.\n\n"
+            "Typical output: a portfolio manager's final sign-off on a position."
+        ),
+    },
+    "execution": {
+        "label": "Execution",
+        "title": "Execution — where the trade actually happens",
+        "blurb": "Where the trade actually happens.",
+        "body": (
+            "Turning a decision into a filled order: choosing venues, timing, "
+            "and order types to minimize cost and market impact. One of the "
+            "most mature and AI-friendly stages.\n\n"
+            "Typical output: a filled order, at the best achievable price."
+        ),
+    },
+    "monitoring": {
+        "label": "Monitoring",
+        "title": "Monitoring — keeping watch after the trade is on",
+        "blurb": "Keeping watch after the trade is on.",
+        "body": (
+            "Ongoing tracking of whether a position or portfolio is still "
+            "behaving as expected — performance, risk exposure, and whether the "
+            "original thesis still holds.\n\n"
+            "Typical output: drift alerts, exposure dashboards, thesis-breaking "
+            "news flags."
+        ),
+    },
+    "compliance": {
+        "label": "Compliance",
+        "title": "Compliance — making sure nothing breaks the rules",
+        "blurb": "Making sure nothing breaks the rules.",
+        "body": (
+            "Checking trades and portfolios against regulatory and internal "
+            "mandate limits, before and after the fact, and keeping the audit "
+            "trail regulators will eventually ask for.\n\n"
+            "Typical output: pre-trade limit checks, automated regulatory filings."
+        ),
+    },
+    "stakeholder": {
+        "label": "Stakeholder Management",
+        "title": "Stakeholder Management — explaining what happened, and why",
+        "blurb": "Explaining what happened, and why.",
+        "body": (
+            "Communicating performance, rationale, and risk to clients, "
+            "investors, and internal stakeholders. AI turns raw numbers into a "
+            "narrative a non-specialist can act on.\n\n"
+            "Typical output: auto-generated client reports, performance summaries."
+        ),
+    },
+}
+
+
 # ─── Admin panel ──────────────────────────────────────────────────────────────
 
 class AgentModelView(ModelView):
@@ -277,7 +495,18 @@ AGENT_CATEGORY_SEED = {
 @app.context_processor
 def inject_globals():
     pending_count = Agent.query.filter_by(status="pending").count()
-    return {"pending_count": pending_count, "today": date.today()}
+    in_stack_count = Agent.query.filter_by(in_stack=True).count()
+    return {
+        "pending_count": pending_count,
+        "in_stack_count": in_stack_count,
+        "today": date.today(),
+        "complexity_dim_info": COMPLEXITY_DIMENSION_INFO,
+        "complexity_info": COMPLEXITY_INFO,
+        "autonomy_dim_info": AUTONOMY_DIMENSION_INFO,
+        "autonomy_info": AUTONOMY_INFO,
+        "stage_dim_info": STAGE_DIMENSION_INFO,
+        "stage_info": STAGE_INFO,
+    }
 
 
 # ─── Matrix ───────────────────────────────────────────────────────────────────
@@ -435,14 +664,171 @@ def pipeline():
 def quick_add():
     name = request.form.get("name", "").strip()
     url  = request.form.get("url",  "").strip()
+    next_page = request.form.get("next", "pipeline")
+    if next_page not in ("pipeline", "enterprise"):
+        next_page = "pipeline"
     if not name:
         flash("Agent name is required.", "warning")
-        return redirect(url_for("pipeline"))
+        return redirect(url_for(next_page))
     agent = Agent(name=name, url=url or None, status="pending")
+    if request.form.get("in_stack"):
+        agent.in_stack = True
     db.session.add(agent)
     db.session.commit()
-    flash(f"'{name}' added to the pipeline.", "success")
-    return redirect(url_for("pipeline"))
+    if agent.in_stack:
+        flash(f"'{name}' added to your enterprise stack — finish classifying it "
+              f"in the Pipeline so it appears on your coverage map.", "success")
+    else:
+        flash(f"'{name}' added to the pipeline.", "success")
+    return redirect(url_for(next_page))
+
+
+# ─── Enterprise Stack ─────────────────────────────────────────────────────────
+
+@app.route("/enterprise")
+def enterprise():
+    all_agents = Agent.query.filter(Agent.status != "rejected").order_by(Agent.name).all()
+    stack_agents     = [a for a in all_agents if a.in_stack]
+    stack_classified = [a for a in stack_agents if a.status == "classified"]
+    stack_pending    = [a for a in stack_agents if a.status != "classified"]
+    classified_all   = [a for a in all_agents if a.status == "classified"]
+
+    # Coverage matrix scoped to the user's stack (complexity × stage)
+    stack_matrix = {}
+    for cx_key, _ in COMPLEXITIES:
+        stack_matrix[cx_key] = {}
+        for stage_key, _ in STAGES:
+            stack_matrix[cx_key][stage_key] = [
+                a for a in stack_classified
+                if a.complexity == cx_key and stage_key in a.stages_list
+            ]
+
+    # Names already represented in the stack (covers both full and name-only adds),
+    # so a tool the user already added isn't suggested again under its catalogue entry
+    stack_names = {a.name.strip().lower() for a in stack_agents}
+
+    # For every empty cell, find catalogue agents (not yet in the stack) that cover it
+    gap_candidates = {}
+    for cx_key, _ in COMPLEXITIES:
+        for stage_key, _ in STAGES:
+            if stack_matrix[cx_key][stage_key]:
+                continue
+            candidates = [
+                a for a in classified_all
+                if a.complexity == cx_key and stage_key in a.stages_list
+                and not a.in_stack and a.name.strip().lower() not in stack_names
+            ]
+            if candidates:
+                gap_candidates[f"{cx_key}|{stage_key}"] = candidates
+
+    # Recommendations: commercial-only candidates, ranked by how many gap cells they'd fill
+    reco_score = {}   # agent.id -> {"count": int, "stages": set(stage_key)}
+    for key, candidates in gap_candidates.items():
+        cx_key, stage_key = key.split("|", 1)
+        for a in candidates:
+            if a.agent_type != "commercial":
+                continue
+            entry = reco_score.setdefault(a.id, {"agent": a, "count": 0, "stages": set()})
+            entry["count"] += 1
+            entry["stages"].add(stage_key)
+    recommendations = sorted(
+        reco_score.values(), key=lambda e: (-e["count"], e["agent"].name.lower())
+    )[:6]
+
+    # Row / column totals for the stack matrix
+    stack_row_totals = {
+        cx_key: len(set(a.id for a in stack_classified if a.complexity == cx_key))
+        for cx_key, _ in COMPLEXITIES
+    }
+    stack_col_totals = {
+        stage_key: len(set(a.id for a in stack_classified if stage_key in a.stages_list))
+        for stage_key, _ in STAGES
+    }
+
+    stages_covered = sum(1 for stage_key, _ in STAGES if stack_col_totals[stage_key] > 0)
+    tiers_covered  = sum(1 for cx_key, _ in COMPLEXITIES if stack_row_totals[cx_key] > 0)
+    total_cells    = len(STAGES) * len(COMPLEXITIES)
+    filled_cells   = sum(
+        1 for cx_key, _ in COMPLEXITIES for stage_key, _ in STAGES
+        if stack_matrix[cx_key][stage_key]
+    )
+    fillable_gaps  = len(gap_candidates)
+    dead_gaps      = total_cells - filled_cells - fillable_gaps
+
+    autonomy_counts = {
+        lvl: sum(1 for a in stack_classified if a.autonomy == lvl)
+        for lvl, _ in [("low", None), ("medium", None), ("high", None), ("full", None)]
+    }
+    advantage_counts = {
+        adv_key: sum(1 for a in stack_classified if a.advantage == adv_key)
+        for adv_key, _ in ADVANTAGES
+    }
+
+    return render_template(
+        "enterprise.html",
+        all_agents=all_agents,
+        stack_agents=stack_agents,
+        stack_classified=stack_classified,
+        stack_pending=stack_pending,
+        stages=STAGES,
+        complexities=COMPLEXITIES,
+        advantages=ADVANTAGES,
+        category_map=CATEGORY_MAP,
+        stack_matrix=stack_matrix,
+        gap_candidates=gap_candidates,
+        recommendations=recommendations,
+        stack_row_totals=stack_row_totals,
+        stack_col_totals=stack_col_totals,
+        stages_covered=stages_covered,
+        tiers_covered=tiers_covered,
+        total_cells=total_cells,
+        filled_cells=filled_cells,
+        fillable_gaps=fillable_gaps,
+        dead_gaps=dead_gaps,
+        autonomy_counts=autonomy_counts,
+        advantage_counts=advantage_counts,
+    )
+
+
+@app.route("/enterprise/save", methods=["POST"])
+def enterprise_save():
+    selected_ids = set(int(i) for i in request.form.getlist("agent_ids") if i.isdigit())
+    all_agents = Agent.query.filter(Agent.status != "rejected").all()
+    for a in all_agents:
+        a.in_stack = a.id in selected_ids
+    db.session.commit()
+    flash(f"Enterprise stack saved — {len(selected_ids)} tool(s) in your stack.", "success")
+    return redirect(url_for("enterprise") + "#picker")
+
+
+@app.route("/enterprise/toggle/<int:agent_id>", methods=["POST"])
+def enterprise_toggle(agent_id):
+    agent = Agent.query.get_or_404(agent_id)
+    agent.in_stack = not agent.in_stack
+    db.session.commit()
+    anchor = request.form.get("anchor", "")
+    flash(
+        f"'{agent.name}' {'added to' if agent.in_stack else 'removed from'} your enterprise stack.",
+        "success",
+    )
+    return redirect(url_for("enterprise") + (f"#{anchor}" if anchor else ""))
+
+
+@app.route("/enterprise/add-minimal/<int:agent_id>", methods=["POST"])
+def enterprise_add_minimal(agent_id):
+    """Add a lightweight reference (name + link only) instead of the catalogue's
+    full classification — a separate pending record, decoupled from the source agent."""
+    source = Agent.query.get_or_404(agent_id)
+    clone = Agent(name=source.name, url=source.url, status="pending", in_stack=True)
+    db.session.add(clone)
+    db.session.commit()
+    flash(
+        f"'{source.name}' added to your stack as name + link only — classify it from "
+        f"the Pipeline to position it on the coverage map.",
+        "success",
+    )
+    anchor = request.form.get("anchor", "")
+    return redirect(url_for("enterprise") + (f"#{anchor}" if anchor else ""))
 
 
 # ─── Wizard ───────────────────────────────────────────────────────────────────
@@ -818,6 +1204,10 @@ def _migrate_db():
         cols = [row[1] for row in conn.execute(text("PRAGMA table_info(agents)")).fetchall()]
         if "category_id" not in cols:
             conn.execute(text("ALTER TABLE agents ADD COLUMN category_id VARCHAR(50)"))
+            conn.commit()
+        if "in_stack" not in cols:
+            conn.execute(text("ALTER TABLE agents ADD COLUMN in_stack BOOLEAN DEFAULT 0"))
+            conn.execute(text("UPDATE agents SET in_stack = 0 WHERE in_stack IS NULL"))
             conn.commit()
         # Unconditionally update all known agent categories (overwrites stale assignments)
         for name, cat_id in AGENT_CATEGORY_SEED.items():

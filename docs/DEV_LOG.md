@@ -6,8 +6,8 @@
 
 ## Project: Panthera AI Agent Classifier
 
-**Stack**: Flask · SQLAlchemy · SQLite · Bootstrap 5 · Anthropic Claude API  
-**Repo root**: `c:\Users\siand\dev\AI_classification\`  
+**Stack**: Flask · SQLAlchemy · SQLite (dev) / PostgreSQL (prod) · Bootstrap 5 · Anthropic Claude API  
+**Repo root**: `c:\Users\siand\dev\AI_benchmark\AI_classification\`  
 **App entry**: `ai_agent_classifier/app.py`
 
 ---
@@ -16,22 +16,26 @@
 
 | Feature | Status | Notes |
 |---|---|---|
-| Classification matrix view (`/`) | ✅ Complete | 3D cube design, filter by advantage |
+| Classification matrix view (`/matrix`) | ✅ Complete | 3D cube design, filter by advantage; toggles to Stage×Advantage and Autonomy Scatter |
+| Stage × Advantage matrix view | ✅ Complete | Toggle on `/matrix`; pivots agents by comparative advantage instead of complexity |
 | Pipeline management (`/pipeline`) | ✅ Complete | Status filter, quick-add, all actions |
-| 4-step classification wizard | ✅ Complete | Add / Edit / Classify modes |
-| Agent detail page | ✅ Complete | Profile card + stage timeline |
+| 4-step classification wizard | ✅ Complete | Add / Edit / Classify modes; includes category select |
+| Agent detail page | ✅ Complete | Profile card + stage timeline + category block |
 | Quick-add (name + URL only) | ✅ Complete | Creates pending agent |
-| Auto-classify via Claude API | ✅ Complete | `auto_classify.py`, tool-forced JSON |
+| Auto-classify via Claude API | ✅ Complete | `auto_classify.py`, tool-forced JSON (does not assign category) |
 | Excel export | ✅ Complete | 3 sheets: matrix, details, stats |
 | Word export | ✅ Complete | Cover + TOC + per-agent sections |
 | PDF export | ✅ Complete | Same structure, ReportLab |
 | REST API (`/api/agents`) | ✅ Complete | Full JSON of all agents |
-| Seed catalogue (40+ agents) | ✅ Complete | `build_agents_db.py` |
+| Seed catalogue (78 agents) | ✅ Complete | `build_agents_db.py` — idempotent, safe to re-run |
 | Reject / Restore / Delete | ✅ Complete | Status lifecycle management |
-| Agent Finder / Guide tab (`/guide`) | ✅ Complete | 4-step questionnaire, JS-filtered results |
-| Framework page (`/framework`) | ✅ Complete | Visual explainer of all 3 axes + supporting dimensions |
+| Agent Finder / Guide tab (`/guide`) | ✅ Complete | 5-step questionnaire (incl. category), JS-filtered results |
+| Framework page (`/`, `/framework`) | ✅ Complete | Now the app's landing page; 5-dimension explainer + category cluster section |
 | `full` autonomy tier | ✅ Complete | Pulsing crimson pip; applied to AIEQ (ID:1) + Numerai (ID:2) |
 | Autonomy Scatter Plot view | ✅ Complete | Toggle on matrix page; dots = agents, X=stage, Y=autonomy |
+| Flask-Admin panel (`/admin`) | ✅ Complete | CRUD over `agents` table; no authentication (see Known Issues) |
+| Category Label system (10 categories) | ✅ Complete | `category_id` column, wizard step 1 select, Guide Q5 filter, agent detail block |
+| PostgreSQL support (`DATABASE_URL`) | ⚠️ Mostly complete | App connects fine; `psycopg2-binary` not yet pinned in `requirements.txt` (see Known Issues) |
 
 ---
 
@@ -39,10 +43,11 @@
 
 > Add items here as they are discovered. Mark resolved items with ✅ and the date.
 
-- [ ] No authentication / user accounts — app is open to anyone on the network
+- [ ] No authentication / user accounts — app is open to anyone on the network. `/admin` (Flask-Admin) is also unauthenticated.
 - [ ] `seed_data.py` is disabled (returns early); either clean up or re-enable
-- [ ] `err.txt`, `out.txt`, `run_stderr.txt` etc. are leftover process logs — should be gitignored
-- [ ] No `.gitignore` exists at project root
+- [x] ~~No `.gitignore` exists at project root~~ — resolved; `.gitignore` now exists and covers `__pycache__/`, `.env`, `ai_agent_classifier/*.txt`, etc.
+- [ ] `requirements.txt` is missing `psycopg2-binary` even though `app.py` supports a `postgresql://` `DATABASE_URL` (added 2026-06-19) — a clean install can't actually connect to Postgres until this is added
+- [ ] Several debug/migration DB artifacts are tracked in git and not gitignored: `ai_agent_classifier/agents_production.db`, `instance/agents copy.db`, `instance/agents_broken.db`, `instance/agents_temp.db`, `instance/agents_b64.txt` — leftovers from the 2026-06-19 Postgres migration
 - [ ] No unit or integration tests
 - [ ] ARKEN Finance (ID:37) URL (`arkenfinance.com`) resolves to a DeFi swap platform — correct URL unknown, needs manual verification
 
@@ -425,6 +430,88 @@
 **Verification**: rendered `/framework` via Flask test client → 200, all new headings present.
 
 **Open items**: The deck (`presentation/build_deck.py`) already covers the 5 dimensions on slide 4 but has **no category-cluster slide**. If "the presentation page" meant the .pptx deck, a categories slide + broader 5-axis treatment can be added (note: would shift the hardcoded 15-slide footer numbering) — flagged to user, not yet done.
+
+---
+
+### 2026-06-19 — Migrate to PostgreSQL (Railway production DB)
+
+**Summary**: Added PostgreSQL support so the app can run against Railway's managed Postgres in production while still defaulting to local SQLite for development. `app.py` now reads `DATABASE_URL`; if unset, falls back to `sqlite:///agents.db`. `postgres://` URLs are rewritten to `postgresql://` (required by SQLAlchemy 1.4+). Added a one-time `migrate_to_postgres.py` script to copy all rows from local `instance/agents.db` into the Postgres target, creating the table if missing and re-syncing the `id` sequence so subsequent inserts don't collide.
+
+**Files changed**:
+- `ai_agent_classifier/app.py` — `DATABASE_URL` env var read with SQLite fallback and `postgres://` → `postgresql://` rewrite for `SQLALCHEMY_DATABASE_URI`
+- `ai_agent_classifier/migrate_to_postgres.py` — new one-time SQLite → Postgres data-copy script (`psycopg2`-based)
+- `ai_agent_classifier/templates/framework.html` — minor copy adjustments unrelated to the DB change
+
+**Design decisions**:
+- Same codebase serves both backends with zero branching beyond the URI construction — `SQLAlchemy` + the `agents` table schema are identical across SQLite and Postgres
+- Migration script is intentionally not run automatically; it's a manual one-shot tool for seeding a fresh Postgres instance from local data
+
+**Known issue introduced**: `psycopg2` is required to actually connect to a `postgresql://` URL but was never added to `requirements.txt` — flagged in Known Issues below.
+
+**Files also added in this commit (migration debugging artifacts, not part of the app)**: `ai_agent_classifier/agents_production.db`, `instance/agents_b64.txt`, `instance/agents_temp.db` — see Known Issues.
+
+**Open items**: add `psycopg2-binary` to `requirements.txt`; clean up the leftover debug DB artifacts.
+
+---
+
+### 2026-06-19 — Authors/tutor presentation deck
+
+**Summary**: Built a 15-slide professional PowerPoint deck presenting the platform to the paper's four authors and the internship tutor. Top-down narrative (goal → problem → framework → methodology → platform tour → results → reflections → limitations → conclusions), styled to the platform's dark/copper design system, embedding the six `docs/screenshots`. Includes per-slide speaker notes and personal design-decision commentary.
+
+**Files created**:
+- `presentation/build_deck.py` — python-pptx generator (palette, layout helpers, image-fit, speaker notes)
+- `presentation/Panthera_AI_Agent_Classifier.pptx` — the rendered 15-slide deck
+
+**Notes / data used**: Pulled live stats from `instance/agents.db` — 78 classified agents; complexity skew to white (39) / light-grey (40), dark-grey 1, black 0; advantage analytical 49 / informational 30 / behavioral 1; autonomy low 54 / medium 14 / high 10 / full 2; stage coverage led by idea-assess (56) and idea-gen (31). These drive the "Results / market view" slide.
+
+**Open items**:
+- Presenter name/date on title + closing slides are placeholders (Andrea Signoretti, June 2026) — confirm/edit
+- "~99%" and "63%" stat-card figures are rounded from the classified set; re-confirm if the DB changes before the talk
+- Deck regenerates via `python presentation/build_deck.py`; PowerPoint COM was used only for visual QA (temp `_render/` removed)
+
+> Note: this session was originally logged to a stray root-level `DEV_LOG.md` (created because that session's memory referenced a dev log path that, at the time, it didn't realize already existed at `docs/DEV_LOG.md`). Merged into this canonical log and the duplicate file removed during the 2026-06-29 documentation refresh below.
+
+---
+
+### 2026-06-26 — Guide Finder: external link buttons on result cards
+
+**Summary**: Added a secondary "open tool" button (↗) next to "View details →" on each Agent Finder result card, linking directly to the agent's external URL in a new tab when one is set.
+
+**Files changed**:
+- `ai_agent_classifier/templates/guide.html` — result-card action row changed from a single full-width "View details →" link to a flex row with that link plus a conditional `btn-outline-secondary` external-link button (`target="_blank" rel="noopener"`)
+
+**Design decisions**:
+- External link button only renders when `a.url` is truthy — agents without a URL keep the original full-width "View details →" button
+- `rel="noopener"` used since the link opens in a new tab
+
+**Open items**: none from this session
+
+---
+
+### 2026-06-29 — Documentation refresh: Postgres, categories, routes, DEV_LOG consolidation
+
+**Summary**: Brought `README.md`, `docs/CLAUDE.md`, and `docs/CLASSIFICATION_GUIDE.md` in line with the current codebase, which had drifted from documentation over several undocumented sessions. Also resolved a duplicate-file problem: a stray root-level `DEV_LOG.md` (different content from this file) had been accumulating its own entries since 2026-06-19; its unique content is now merged above and the duplicate removed.
+
+**Gaps found and fixed**:
+- Landing route changed from `/` → `matrix()` to `/`, `/framework` → `framework()` weeks ago (see "Framework as landing page" session); `CLAUDE.md`'s route table and README's feature headings still described the old routing
+- `/matrix` now has a third view, "Stage × Advantage" (`adv_matrix` in `app.py`), undocumented anywhere
+- `/admin` (Flask-Admin) was documented in this log but missing entirely from `CLAUDE.md`'s route table and `README.md`'s feature list
+- Category Label (10 categories, `category_id` column, Guide Q5, wizard step 1 select) shipped over multiple sessions in this log but was never added to `CLAUDE.md`'s DB schema / classification framework sections or to `CLASSIFICATION_GUIDE.md` at all
+- Guide is a 5-step questionnaire (added category as Q5), but README still said "4-Step Questionnaire"
+- PostgreSQL/`DATABASE_URL` support (added 2026-06-19, see above) was undocumented everywhere except `migrate_to_postgres.py`'s own docstring
+- `README.md`'s link to the classification guide pointed at `CLASSIFICATION_GUIDE.md` (root-relative) but the file actually lives at `docs/CLASSIFICATION_GUIDE.md` — broken link, now fixed
+- File-structure diagrams in both `README.md` and `CLAUDE.md` showed `CLAUDE.md` / `DEV_LOG.md` / `CLASSIFICATION_GUIDE.md` at the repo root; they actually live under `docs/` — diagrams corrected, `presentation/` and `Procfile` added
+- `requirements.txt` lives at the `AI_classification/` repo root (required for Railway's buildpack), not inside `ai_agent_classifier/` as both docs claimed; also didn't list `flask-admin` or `gunicorn`, which are present in the real file
+- Agent counts were stale (77 classified, several places) — corrected to the current local DB snapshot: 78 classified / 81 total
+
+**Files changed**:
+- `README.md` — fixed broken guide link, file-structure diagram, tech stack table, installation/deployment instructions, feature list (3 matrix views, 5-step guide, category in wizard, admin panel, link buttons), screenshot gallery, agent counts
+- `docs/CLAUDE.md` — fixed route table, file-structure diagram, DB schema (`category_id`), added Category Label section, added Deployment section, added `/admin` route, updated Key Design Decisions, agent counts
+- `docs/CLASSIFICATION_GUIDE.md` — added §4a Category Label (10 categories) and `category_id` to the schema table
+- `docs/DEV_LOG.md` — this entry; merged the stray root `DEV_LOG.md` presentation-deck entry; added the two missing sessions above (Postgres migration, Guide link buttons); updated Known Issues
+- `DEV_LOG.md` (repo root) — removed; was a duplicate of this file with diverging content
+
+**Open items**: `requirements.txt` still needs `psycopg2-binary` added for the documented Postgres path to actually work from a clean install (flagged, not fixed — out of scope for a docs-only pass). Tracked DB artifact files (`agents_production.db`, `instance/agents copy.db`, `instance/agents_broken.db`, `instance/agents_temp.db`, `instance/agents_b64.txt`) still need cleanup/gitignoring.
 
 ---
 

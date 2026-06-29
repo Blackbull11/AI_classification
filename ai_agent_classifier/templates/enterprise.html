@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% import "_macros.html" as m %}
-{% block title %}Enterprise Profile — AI Agent Classifier{% endblock %}
+{% block title %}Enterprise Stack — AI Agent Classifier{% endblock %}
 
 {% block content %}
 {% set cx_label_map = {'black':'Black Swan','dark-grey':'Dark Grey Swan','light-grey':'Light Grey Swan','white':'White Swan'} %}
@@ -8,7 +8,7 @@
 {% set autonomy_label_map = {'low':'Low','medium':'Medium','high':'High','full':'Fully Autonomous'} %}
 
 <div class="mt-4 mb-3">
-  <h4 class="fw-bold mb-1 page-title">Enterprise Profile</h4>
+  <h4 class="fw-bold mb-1 page-title">Enterprise Stack</h4>
   <p class="ent-intro">
     Mark which AI tools your firm actually has in production today. We'll plot them on the same
     Complexity × Investment Stage map used across this app, and show you exactly where the coverage
@@ -65,66 +65,80 @@
   </p>
 
   <form method="POST" action="{{ url_for('enterprise_save') }}" id="entPickerForm">
-    <div class="ent-picker-toolbar">
-      <input type="text" class="form-control form-control-sm ent-search-input"
-             id="entSearchInput" placeholder="Search tools by name…" />
-      <span class="ent-picker-count"><span id="entCheckedCount">{{ stack_agents|length }}</span> selected</span>
-      <button type="button" class="btn btn-outline-secondary btn-sm ms-auto" data-bs-toggle="modal"
-              data-bs-target="#entQuickAddModal">+ Add a custom tool</button>
+    <div class="card border-0 shadow-sm ent-picker-card">
+      <div class="card-body">
+        <div class="ent-picker-toolbar">
+          <input type="text" class="form-control form-control-sm ent-search-input"
+                 id="entSearchInput" placeholder="Search tools by name…" />
+          <button type="button" id="entCommercialFilterChip" class="ent-filter-chip active" data-active="true">
+            Commercial only <span class="ent-filter-chip-x">✕</span>
+          </button>
+          <span class="ent-picker-count">
+            <span id="entCheckedCount">{{ stack_agents|length }}</span> selected
+            · <span id="entShownCount"></span> shown
+          </span>
+          <button type="button" class="btn btn-outline-secondary btn-sm ms-auto" data-bs-toggle="modal"
+                  data-bs-target="#entQuickAddModal">+ Add a custom tool</button>
+        </div>
+
+        {% if all_agents %}
+          <div class="ent-picker-table-wrap">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th style="width:34px"></th>
+                  <th>Name</th>
+                  <th>Type</th>
+                  <th>Category</th>
+                  <th>Complexity</th>
+                  <th>Stage(s)</th>
+                  <th>Autonomy</th>
+                </tr>
+              </thead>
+              <tbody id="entPickerBody">
+                {% for agent in all_agents %}
+                  <tr class="{% if agent.in_stack %}ent-row-checked{% endif %}{% if agent.status != 'classified' %} ent-row-unclassified{% endif %}"
+                      data-name="{{ agent.name|lower }}" data-type="{{ agent.agent_type or '' }}">
+                    <td>
+                      <input type="checkbox" class="form-check-input ent-tool-checkbox" name="agent_ids"
+                             value="{{ agent.id }}" {% if agent.in_stack %}checked{% endif %} />
+                    </td>
+                    <td>
+                      <a href="{{ url_for('agent_detail', agent_id=agent.id) }}" class="ent-agent-link">{{ agent.name }}</a>
+                      {% if agent.status != 'classified' %}<span class="ent-pending-pill">Unclassified</span>{% endif %}
+                    </td>
+                    <td>
+                      <span class="ent-type-pill ent-type-pill-{{ agent.agent_type or 'none' }}">{{ (agent.agent_type or '—')|replace('-',' ')|title }}</span>
+                    </td>
+                    <td>
+                      {% if agent.category_id and agent.category_id in category_map %}
+                        {% set cat = category_map[agent.category_id] %}
+                        <span class="badge px-2 py-1" style="background:{{ cat.color }};color:#fff;font-size:10.5px">{{ cat.label }}</span>
+                      {% else %}<span class="text-muted">—</span>{% endif %}
+                    </td>
+                    <td class="small">{{ cx_label_map.get(agent.complexity, '—') }}</td>
+                    <td class="small">
+                      {%- set sl = [] -%}
+                      {%- for sk in agent.stages_list -%}{%- set _ = sl.append(stage_label_map.get(sk, sk)) -%}{%- endfor -%}
+                      {{ sl|join(', ') if sl else '—' }}
+                    </td>
+                    <td class="small">{{ autonomy_label_map.get(agent.autonomy, '—') }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div id="entNoMatch" class="text-muted text-center small py-3" style="display:none">No tools match your filters.</div>
+
+          <div class="ent-save-bar">
+            <button type="submit" class="btn btn-primary">Save &amp; Benchmark →</button>
+            <span class="text-muted small">Saving updates the coverage map below.</span>
+          </div>
+        {% else %}
+          <p class="text-muted mb-0">No agents in the catalogue yet.</p>
+        {% endif %}
+      </div>
     </div>
-
-    {% if all_agents %}
-      <div class="ent-picker-table-wrap">
-        <table class="table table-sm table-hover align-middle mb-0">
-          <thead class="table-light">
-            <tr>
-              <th style="width:34px"></th>
-              <th>Name</th>
-              <th>Category</th>
-              <th>Complexity</th>
-              <th>Stage(s)</th>
-              <th>Autonomy</th>
-            </tr>
-          </thead>
-          <tbody id="entPickerBody">
-            {% for agent in all_agents %}
-              <tr class="{% if agent.in_stack %}ent-row-checked{% endif %}{% if agent.status != 'classified' %} ent-row-unclassified{% endif %}"
-                  data-name="{{ agent.name|lower }}">
-                <td>
-                  <input type="checkbox" class="form-check-input ent-tool-checkbox" name="agent_ids"
-                         value="{{ agent.id }}" {% if agent.in_stack %}checked{% endif %} />
-                </td>
-                <td>
-                  <a href="{{ url_for('agent_detail', agent_id=agent.id) }}" class="text-decoration-none fw-medium">{{ agent.name }}</a>
-                  {% if agent.status != 'classified' %}<span class="ent-pending-pill">Unclassified</span>{% endif %}
-                </td>
-                <td>
-                  {% if agent.category_id and agent.category_id in category_map %}
-                    {% set cat = category_map[agent.category_id] %}
-                    <span class="badge px-2 py-1" style="background:{{ cat.color }};color:#fff;font-size:10.5px">{{ cat.label }}</span>
-                  {% else %}<span class="text-muted">—</span>{% endif %}
-                </td>
-                <td class="small">{{ cx_label_map.get(agent.complexity, '—') }}</td>
-                <td class="small">
-                  {%- set sl = [] -%}
-                  {%- for sk in agent.stages_list -%}{%- set _ = sl.append(stage_label_map.get(sk, sk)) -%}{%- endfor -%}
-                  {{ sl|join(', ') if sl else '—' }}
-                </td>
-                <td class="small">{{ autonomy_label_map.get(agent.autonomy, '—') }}</td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      <div id="entNoMatch" class="text-muted text-center small py-3" style="display:none">No tools match your search.</div>
-
-      <div class="ent-save-bar">
-        <button type="submit" class="btn btn-primary">Save &amp; Benchmark →</button>
-        <span class="text-muted small">Saving updates the coverage map below.</span>
-      </div>
-    {% else %}
-      <p class="text-muted">No agents in the catalogue yet.</p>
-    {% endif %}
   </form>
 </div>
 
@@ -235,10 +249,7 @@
                                 {{ (cand.advantage or '')|title }}{% if cand.agent_type %} · {{ cand.agent_type|replace('-',' ')|title }}{% endif %}
                               </span>
                             </div>
-                            <form method="POST" action="{{ url_for('enterprise_toggle', agent_id=cand.id) }}" class="d-inline">
-                              <input type="hidden" name="anchor" value="matrix" />
-                              <button type="submit" class="gap-add-btn">+ Add</button>
-                            </form>
+                            {{ m.add_to_stack(cand, anchor='matrix', size='sm') }}
                           </div>
                         {% endfor %}
                       </div>
@@ -268,71 +279,174 @@
   </div>
 </div>
 
-<!-- ── Coverage scorecard ─────────────────────────────────────────────────── -->
-<div class="row g-3 mb-5">
-  <div class="col-md-6">
-    <div class="card border-0 shadow-sm h-100">
+<!-- ── Stack composition diagrams ───────────────────────────────────────────── -->
+<div class="mb-2">
+  <div class="ent-section-title">Stack composition</div>
+  <p class="ent-section-sub">
+    How many of your {{ stack_classified|length }} classified tool(s) fall into each criterion —
+    plain counts, not a share of the wider catalogue.
+  </p>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
       <div class="card-body">
-        <h6 class="card-title fw-bold mb-1">Coverage by process stage</h6>
-        <p class="text-muted small mb-3">Your tools vs. the full {{ catalogue_total }}-agent catalogue, per stage.</p>
+        <h6 class="card-title fw-bold mb-3">Tools per process stage</h6>
+        {% set stage_count_list = [] %}
+        {% for stage_key, stage_label in stages %}{% set _ = stage_count_list.append(stack_col_totals[stage_key]) %}{% endfor %}
+        {% set max_stage_n = stage_count_list|max %}
+        {% set max_stage_n = max_stage_n if max_stage_n > 0 else 1 %}
         {% for stage_key, stage_label in stages %}
-          {% set cat_n = catalogue_col_totals[stage_key] %}
-          {% set my_n  = stack_col_totals[stage_key] %}
-          {% set pct = (my_n / cat_n * 100) if cat_n else 0 %}
-          <div class="ent-scorecard-row">
-            <span class="ent-scorecard-name">{{ stage_label }}</span>
-            {% if cat_n %}
-              <span class="ent-scorecard-bar-track">
-                <span class="ent-scorecard-bar" style="width:{{ pct }}%"></span>
-              </span>
-              <span class="ent-scorecard-count {% if my_n > 0 %}ent-scorecard-ok{% else %}ent-scorecard-gap{% endif %}">
-                {{ my_n }} / {{ cat_n }}
-              </span>
-            {% else %}
-              <span class="ent-scorecard-bar-track"></span>
-              <span class="ent-scorecard-count text-muted">no tools</span>
-            {% endif %}
+          {% set count = stack_col_totals[stage_key] %}
+          {% set pct = (count / max_stage_n * 100)|int %}
+          {% set is_max = (count == max_stage_n and count > 0) %}
+          <div class="d-flex align-items-center mb-2 gap-2">
+            <span class="chart-label text-end text-muted" style="min-width:150px;font-size:11px">{{ stage_label }}</span>
+            <div class="chart-bar-track flex-grow-1">
+              {% if count > 0 %}
+                <div class="chart-bar" style="width:{{ pct }}%;background:{% if is_max %}var(--accent){% else %}rgba(196,132,90,0.30){% endif %}"></div>
+              {% endif %}
+            </div>
+            <span class="chart-count" style="min-width:24px;font-size:11px;color:{% if is_max %}var(--accent){% else %}var(--text-secondary){% endif %}">{{ count }}</span>
           </div>
         {% endfor %}
       </div>
     </div>
   </div>
-  <div class="col-md-6">
+</div>
+
+<div class="row g-3 mb-5">
+  <div class="col-md-4">
     <div class="card border-0 shadow-sm h-100">
       <div class="card-body">
-        <h6 class="card-title fw-bold mb-1">Coverage by complexity tier</h6>
-        <p class="text-muted small mb-3">Your tools vs. the full {{ catalogue_total }}-agent catalogue, per tier.</p>
+        <h6 class="card-title fw-bold mb-3">Tools per complexity tier</h6>
+        {% set cx_count_list = [] %}
+        {% for cx_key, cx_label in complexities %}{% set _ = cx_count_list.append(stack_row_totals[cx_key]) %}{% endfor %}
+        {% set max_cx_n = cx_count_list|max %}
+        {% set max_cx_n = max_cx_n if max_cx_n > 0 else 1 %}
         {% for cx_key, cx_label in complexities %}
-          {% set cat_n = catalogue_row_totals[cx_key] %}
-          {% set my_n  = stack_row_totals[cx_key] %}
-          {% set pct = (my_n / cat_n * 100) if cat_n else 0 %}
-          <div class="ent-scorecard-row">
-            <span class="ent-scorecard-name">{{ cx_label }}</span>
-            {% if cat_n %}
-              <span class="ent-scorecard-bar-track">
-                <span class="ent-scorecard-bar" style="width:{{ pct }}%"></span>
-              </span>
-              <span class="ent-scorecard-count {% if my_n > 0 %}ent-scorecard-ok{% else %}ent-scorecard-gap{% endif %}">
-                {{ my_n }} / {{ cat_n }}
-              </span>
-            {% else %}
-              <span class="ent-scorecard-bar-track"></span>
-              <span class="ent-scorecard-count text-muted">no tools</span>
-            {% endif %}
+          {% set count = stack_row_totals[cx_key] %}
+          {% set pct = (count / max_cx_n * 100)|int %}
+          {% set is_max = (count == max_cx_n and count > 0) %}
+          <div class="d-flex align-items-center mb-2 gap-2">
+            <span class="chart-label text-end text-muted" style="min-width:80px;font-size:11px">{{ cx_label }}</span>
+            <div class="chart-bar-track flex-grow-1">
+              {% if count > 0 %}
+                <div class="chart-bar" style="width:{{ pct }}%;background:{% if is_max %}var(--accent){% else %}rgba(196,132,90,0.30){% endif %}"></div>
+              {% endif %}
+            </div>
+            <span class="chart-count" style="min-width:18px;font-size:11px;color:{% if is_max %}var(--accent){% else %}var(--text-secondary){% endif %}">{{ count }}</span>
           </div>
         {% endfor %}
-        <div class="detail-divider"></div>
-        <h6 class="card-title fw-bold mb-1" style="font-size:13px">Autonomy mix in your stack</h6>
-        <div class="d-flex gap-2 flex-wrap mt-2">
-          {% for lvl in ['low','medium','high','full'] %}
-            <span class="badge px-2 py-1" style="background:var(--bg-elevated);color:var(--text-secondary);font-size:11px;border:1px solid var(--border)">
-              {{ autonomy_label_map[lvl] }}: {{ autonomy_counts[lvl] }}
-            </span>
-          {% endfor %}
-        </div>
       </div>
     </div>
   </div>
+
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <h6 class="card-title fw-bold mb-3">Tools per autonomy level</h6>
+        {% set aut_colors = {'low':'#9BA8A0','medium':'#C8A828','high':'#CC7830','full':'#C04848'} %}
+        {% set aut_count_list = [autonomy_counts.low, autonomy_counts.medium, autonomy_counts.high, autonomy_counts.full] %}
+        {% set max_aut_n = aut_count_list|max %}
+        {% set max_aut_n = max_aut_n if max_aut_n > 0 else 1 %}
+        {% for lvl in ['low','medium','high','full'] %}
+          {% set count = autonomy_counts[lvl] %}
+          {% set pct = (count / max_aut_n * 100)|int %}
+          <div class="d-flex align-items-center mb-2 gap-2">
+            <span class="chart-label text-end" style="min-width:80px;font-size:11px;color:{{ aut_colors[lvl] }}">{{ autonomy_label_map[lvl] }}</span>
+            <div class="chart-bar-track flex-grow-1">
+              {% if count > 0 %}
+                <div class="chart-bar" style="width:{{ pct }}%;background:{{ aut_colors[lvl] }}"></div>
+              {% endif %}
+            </div>
+            <span class="chart-count" style="min-width:18px;font-size:11px;color:{{ aut_colors[lvl] }}">{{ count }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <h6 class="card-title fw-bold mb-3">Tools per comparative advantage</h6>
+        {% set adv_colors = {'informational':'var(--inf)','analytical':'var(--ana)','behavioral':'var(--beh)'} %}
+        {% set adv_count_list = [] %}
+        {% for adv_key, adv_label in advantages %}{% set _ = adv_count_list.append(advantage_counts[adv_key]) %}{% endfor %}
+        {% set max_adv_n = adv_count_list|max %}
+        {% set max_adv_n = max_adv_n if max_adv_n > 0 else 1 %}
+        {% for adv_key, adv_label in advantages %}
+          {% set count = advantage_counts[adv_key] %}
+          {% set pct = (count / max_adv_n * 100)|int %}
+          <div class="d-flex align-items-center mb-2 gap-2">
+            <span class="chart-label text-end" style="min-width:80px;font-size:11px;color:{{ adv_colors[adv_key] }}">{{ adv_label }}</span>
+            <div class="chart-bar-track flex-grow-1">
+              {% if count > 0 %}
+                <div class="chart-bar" style="width:{{ pct }}%;background:{{ adv_colors[adv_key] }}"></div>
+              {% endif %}
+            </div>
+            <span class="chart-count" style="min-width:18px;font-size:11px;color:{{ adv_colors[adv_key] }}">{{ count }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Recommended additions ──────────────────────────────────────────────── -->
+<div id="recommendations" class="mb-5">
+  <div class="ent-section-title">Recommended additions</div>
+  <p class="ent-section-sub">
+    Commercial tools from the catalogue that would close the most coverage gaps in your stack —
+    ranked by how many empty cells on your map above they'd fill. In-house and academic tools are
+    excluded since you can't simply go and add those.
+  </p>
+
+  {% if recommendations %}
+    <div class="row g-3">
+      {% for entry in recommendations %}
+        {% set agent = entry.agent %}
+        <div class="col-md-6 col-xl-4">
+          <div class="card border-0 shadow-sm h-100 ent-reco-card">
+            <div class="card-body d-flex flex-column">
+              <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+                <a href="{{ url_for('agent_detail', agent_id=agent.id) }}" class="ent-reco-name">{{ agent.name }}</a>
+                <span class="ent-reco-fill-badge">Fills {{ entry.count }} gap{{ 's' if entry.count != 1 }}</span>
+              </div>
+              <div class="d-flex gap-1 flex-wrap mb-2">
+                {% if agent.category_id and agent.category_id in category_map %}
+                  <span class="badge px-2 py-1" style="background:{{ category_map[agent.category_id].color }};color:#fff;font-size:10px">{{ category_map[agent.category_id].label }}</span>
+                {% endif %}
+                <span class="guide-meta-pill">{{ cx_label_map.get(agent.complexity, agent.complexity) }}</span>
+                <span class="guide-meta-pill">{{ (agent.advantage or '')|title }}</span>
+                <span class="guide-meta-pill">{{ autonomy_label_map.get(agent.autonomy, agent.autonomy) }} autonomy</span>
+              </div>
+              {% if agent.description %}
+                <p class="ent-reco-desc">{{ agent.description[:130] }}{% if agent.description|length > 130 %}…{% endif %}</p>
+              {% endif %}
+              <div class="ent-reco-stages mb-3">
+                <span class="ent-reco-stages-label">Would newly cover:</span>
+                {% for stage_key, stage_label in stages %}
+                  {% if stage_key in entry.stages %}<span class="guide-stage-chip">{{ stage_label }}</span>{% endif %}
+                {% endfor %}
+              </div>
+              <div class="mt-auto">
+                {{ m.add_to_stack(agent, anchor='recommendations', size='lg') }}
+                <a href="{{ url_for('agent_detail', agent_id=agent.id) }}" class="ent-reco-details-link">View full profile →</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="ent-stack-empty">
+      No commercial catalogue tools left to recommend — either your stack already covers every
+      gap a commercial tool could fill, or the remaining gaps have no commercial solution yet.
+    </div>
+  {% endif %}
 </div>
 
 <!-- Quick Add Modal (custom tool → goes straight into the stack) -->
@@ -373,26 +487,47 @@
 
 {% block extra_js %}
 <script>
-// ── Tool picker: search filter + live selected count ──────────────────────
+// ── Tool picker: search filter + commercial-only chip + live selected count ─
 (function () {
-  const searchInput = document.getElementById('entSearchInput');
-  const rows = document.querySelectorAll('#entPickerBody tr');
-  const noMatch = document.getElementById('entNoMatch');
-  const countEl = document.getElementById('entCheckedCount');
-  const checkboxes = document.querySelectorAll('.ent-tool-checkbox');
+  const searchInput   = document.getElementById('entSearchInput');
+  const commercialChip = document.getElementById('entCommercialFilterChip');
+  const rows           = document.querySelectorAll('#entPickerBody tr');
+  const noMatch         = document.getElementById('entNoMatch');
+  const countEl         = document.getElementById('entCheckedCount');
+  const shownEl         = document.getElementById('entShownCount');
+  const checkboxes      = document.querySelectorAll('.ent-tool-checkbox');
 
-  if (searchInput) {
-    searchInput.addEventListener('input', function () {
-      const q = this.value.trim().toLowerCase();
-      let visible = 0;
-      rows.forEach(row => {
-        const show = !q || row.dataset.name.includes(q);
-        row.style.display = show ? '' : 'none';
-        if (show) visible++;
-      });
-      if (noMatch) noMatch.style.display = visible === 0 ? '' : 'none';
+  let commercialOnly = true; // default filter — applied on load, removable
+
+  function applyFilters() {
+    const q = searchInput ? searchInput.value.trim().toLowerCase() : '';
+    let visible = 0;
+    rows.forEach(row => {
+      const nameOk = !q || row.dataset.name.includes(q);
+      const typeOk = !commercialOnly || row.dataset.type === 'commercial';
+      const show = nameOk && typeOk;
+      row.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+    if (noMatch) noMatch.style.display = visible === 0 ? '' : 'none';
+    if (shownEl) shownEl.textContent = visible + ' of ' + rows.length;
+  }
+
+  if (searchInput) searchInput.addEventListener('input', applyFilters);
+
+  if (commercialChip) {
+    commercialChip.addEventListener('click', function () {
+      commercialOnly = !commercialOnly;
+      commercialChip.classList.toggle('active', commercialOnly);
+      commercialChip.dataset.active = commercialOnly;
+      commercialChip.innerHTML = commercialOnly
+        ? 'Commercial only <span class="ent-filter-chip-x">✕</span>'
+        : '+ Commercial only';
+      applyFilters();
     });
   }
+
+  applyFilters(); // apply the default commercial-only filter on load
 
   function updateCount() {
     const n = document.querySelectorAll('.ent-tool-checkbox:checked').length;

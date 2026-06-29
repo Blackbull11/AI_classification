@@ -17,6 +17,8 @@ The framework rests on four orthogonal dimensions:
 
 A fifth dimension — **Agent Type** (commercial / in-house / academic) — is added for provenance tracking.
 
+A sixth field — **Category Label** (10 functional clusters, CAT-1 through CAT-10) — is tracked for catalogue organization and Agent Finder filtering. It is a Panthera platform addition, not part of the original academic framework.
+
 ---
 
 ## Swan Theory — Theoretical Background
@@ -53,6 +55,7 @@ The database is a single SQLite table (`agents`), managed by SQLAlchemy. The fil
 | `agent_type` | TEXT | Yes | `"commercial"` \| `"in-house"` \| `"academic"` |
 | `complexity` | TEXT | Yes | `"white"` \| `"light-grey"` \| `"dark-grey"` \| `"black"` |
 | `stages` | TEXT (JSON) | Yes | JSON array of stage keys (see below) |
+| `category_id` | TEXT | Yes | One of 10 category ids (CAT-1…CAT-10), or `NULL` if uncategorized — see §4a below |
 | `status` | TEXT | No | `"pending"` \| `"classified"` \| `"rejected"` |
 | `created_at` | DATETIME | Yes | UTC timestamp of creation |
 
@@ -162,6 +165,27 @@ What is the origin of the agent?
 | `commercial` | A product sold or licensed by a vendor. Available to any firm as a SaaS subscription or data feed. |
 | `in-house` | Built and operated internally by the investment firm itself. Not available externally. |
 | `academic` | A research prototype or tool originating from a university or research institution. May not be production-ready. |
+
+---
+
+### 4a. Category Label
+
+A functional cluster describing the agent's primary role in the investment workflow — orthogonal to the four dimensions above. Ten categories, defined in `app.py` as `CATEGORIES` and assigned per-agent via `AGENT_CATEGORY_SEED`:
+
+| ID | Category | What distinguishes it |
+|---|---|---|
+| CAT-1 | Autonomous Trading Engines | AI drives signal-to-execution end-to-end with no per-trade human input |
+| CAT-2 | AI Execution Optimizers | Receives a trading decision from upstream; optimizes only *how* it's executed |
+| CAT-3 | Agentic Quant Research Systems | AI decides *what* to research, not just how to execute a human-defined query |
+| CAT-4 | Quantitative Signal & Screening Tools | Human defines the question; tool returns scores/signals as input to a human decision |
+| CAT-5 | AI Portfolio Construction & Management | Constructs and manages actual allocations within a pre-approved mandate |
+| CAT-6 | Investment Research & Document Intelligence | Pull-based, query-driven synthesis over documents/filings/research |
+| CAT-7 | Market Intelligence & Real-Time Monitoring | Push-based — proactively surfaces alerts without being queried |
+| CAT-8 | Risk, AML & Surveillance Monitors | Detects misconduct/financial crime in transaction/communication data |
+| CAT-9 | ESG & Regulatory Compliance Platforms | Sustainability and regulatory-reporting workflows, not misconduct detection |
+| CAT-10 | Client & Stakeholder Intelligence | Serves the advisor-client / IR relationship, not the investment decision |
+
+Categories are **lenses, not rigid boxes** — pick the cluster that matches the agent's primary workflow role. Some general-purpose bank LLM suites (e.g. Goldman Sachs AI Assistant, JPMorgan LLM Suite, Kensho) are intentionally left uncategorized rather than forced into a poor fit. `auto_classify.py` does not assign categories — they are set only via seed data (`build_agents_db.py` / `AGENT_CATEGORY_SEED`) or manual edit in the wizard / `/admin`.
 
 ---
 

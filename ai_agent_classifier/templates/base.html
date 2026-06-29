@@ -49,6 +49,16 @@
         </li>
         <li class="nav-item">
           <a class="nav-link app-nav-link
+            {% if request.endpoint == 'enterprise' %}active{% endif %}"
+             href="{{ url_for('enterprise') }}">
+            Enterprise Stack
+            {% if in_stack_count > 0 %}
+              <span class="badge app-badge-pending ms-1">{{ in_stack_count }}</span>
+            {% endif %}
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link app-nav-link
             {% if request.endpoint == 'framework' %}active{% endif %}"
              href="{{ url_for('framework') }}">Framework</a>
         </li>

@@ -21,6 +21,7 @@ class Agent(db.Model):
     stages = db.Column(db.Text)
     category_id = db.Column(db.String(50))
     status = db.Column(db.String(20), default="pending")
+    in_stack = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     @property

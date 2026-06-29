@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "_macros.html" as m %}
 {% block title %}Agent Finder — AI Agent Classifier{% endblock %}
 
 {% block content %}
@@ -17,14 +18,15 @@
       <div class="guide-q-block">
         <div class="d-flex align-items-center gap-2 mb-1">
           <span class="guide-step-num">01</span>
-          <span class="guide-q-title">Investment stage</span>
+          <span class="guide-q-title">Investment stage{{ m.info_icon(stage_dim_info.title, stage_dim_info.body) }}</span>
           <button class="guide-clear-link ms-auto d-none" id="clear-stages" onclick="clearStages()">Clear</button>
         </div>
-        <p class="guide-q-hint">Multi-select — empty means all stages</p>
+        <p class="guide-q-hint">Multi-select — empty means all stages. Hover a stage for what it covers.</p>
         <div class="guide-chips-wrap">
           {% for key, label in stages %}
           <button class="guide-chip guide-stage-{{ key }}"
-                  data-val="{{ key }}" data-group="stage">{{ label }}</button>
+                  data-val="{{ key }}" data-group="stage" data-bs-toggle="tooltip"
+                  title="{{ stage_info[key].blurb }}">{{ label }}</button>
           {% endfor %}
         </div>
       </div>
@@ -47,14 +49,14 @@
       <div class="guide-q-block">
         <div class="d-flex align-items-center gap-2 mb-2">
           <span class="guide-step-num">03</span>
-          <span class="guide-q-title">Autonomy level</span>
+          <span class="guide-q-title">Autonomy level{{ m.info_icon(autonomy_dim_info.title, autonomy_dim_info.body) }}</span>
         </div>
         <div class="guide-chips-wrap">
           <button class="guide-chip selected" data-val="any"    data-group="autonomy">Any</button>
-          <button class="guide-chip"          data-val="low"    data-group="autonomy">Low</button>
-          <button class="guide-chip"          data-val="medium" data-group="autonomy">Medium</button>
-          <button class="guide-chip"          data-val="high"   data-group="autonomy">High</button>
-          <button class="guide-chip"          data-val="full"   data-group="autonomy">Fully Autonomous</button>
+          <button class="guide-chip" data-val="low"    data-group="autonomy" data-bs-toggle="tooltip" title="{{ autonomy_info.low.blurb }}">Low</button>
+          <button class="guide-chip" data-val="medium" data-group="autonomy" data-bs-toggle="tooltip" title="{{ autonomy_info.medium.blurb }}">Medium</button>
+          <button class="guide-chip" data-val="high"   data-group="autonomy" data-bs-toggle="tooltip" title="{{ autonomy_info.high.blurb }}">High</button>
+          <button class="guide-chip" data-val="full"   data-group="autonomy" data-bs-toggle="tooltip" title="{{ autonomy_info.full.blurb }}">Fully Autonomous</button>
         </div>
       </div>
 
@@ -62,14 +64,14 @@
       <div class="guide-q-block">
         <div class="d-flex align-items-center gap-2 mb-2">
           <span class="guide-step-num">04</span>
-          <span class="guide-q-title">Complexity tier</span>
+          <span class="guide-q-title">Complexity tier{{ m.info_icon(complexity_dim_info.title, complexity_dim_info.body) }}</span>
         </div>
         <div class="guide-chips-wrap">
-          <button class="guide-chip selected"         data-val="any"        data-group="complexity">Any tier</button>
-          <button class="guide-chip guide-cx-black"   data-val="black"      data-group="complexity">Black Swan</button>
-          <button class="guide-chip guide-cx-dgrey"   data-val="dark-grey"  data-group="complexity">Dark Grey</button>
-          <button class="guide-chip guide-cx-lgrey"   data-val="light-grey" data-group="complexity">Light Grey</button>
-          <button class="guide-chip guide-cx-white"   data-val="white"      data-group="complexity">White Swan</button>
+          <button class="guide-chip selected" data-val="any" data-group="complexity">Any tier</button>
+          <button class="guide-chip guide-cx-black" data-val="black"      data-group="complexity" data-bs-toggle="tooltip" title="{{ complexity_info.black.blurb }}">Black Swan</button>
+          <button class="guide-chip guide-cx-dgrey" data-val="dark-grey"  data-group="complexity" data-bs-toggle="tooltip" title="{{ complexity_info['dark-grey'].blurb }}">Dark Grey</button>
+          <button class="guide-chip guide-cx-lgrey" data-val="light-grey" data-group="complexity" data-bs-toggle="tooltip" title="{{ complexity_info['light-grey'].blurb }}">Light Grey</button>
+          <button class="guide-chip guide-cx-white" data-val="white"      data-group="complexity" data-bs-toggle="tooltip" title="{{ complexity_info.white.blurb }}">White Swan</button>
         </div>
       </div>
 

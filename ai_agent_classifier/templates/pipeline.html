@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "_macros.html" as m %}
 {% block title %}Pipeline — AI Agent Classifier{% endblock %}
 
 {% block content %}
@@ -78,10 +79,10 @@
           <th>Name</th>
           <th>Category</th>
           <th>Status</th>
-          <th>Stage(s)</th>
-          <th>Complexity</th>
+          <th>Stage(s){{ m.info_icon(stage_dim_info.title, stage_dim_info.body) }}</th>
+          <th>Complexity{{ m.info_icon(complexity_dim_info.title, complexity_dim_info.body) }}</th>
           <th>Advantage</th>
-          <th>Autonomy</th>
+          <th>Autonomy{{ m.info_icon(autonomy_dim_info.title, autonomy_dim_info.body) }}</th>
           <th>Type</th>
           <th>Added</th>
           <th>Actions</th>

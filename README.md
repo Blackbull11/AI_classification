@@ -29,48 +29,59 @@ The complexity dimension adapts Nassim Nicholas Taleb's *Black Swan* theory (200
 
 ---
 
-## Screenshot
+## Screenshots
 
 ![AI Agent Classification Matrix](docs/screenshots/matrix.png)
 
-*The classification matrix maps 77 AI agents across 7 investment process stages and 4 Swan Theory complexity tiers. Each badge encodes three independent dimensions: fill/border color (comparative advantage), border style (agent type), and autonomy pip (level of human oversight).*
+*The classification matrix maps 78 classified AI agents across 7 investment process stages and 4 Swan Theory complexity tiers. Each badge encodes three independent dimensions: fill/border color (comparative advantage), border style (agent type), and autonomy pip (level of human oversight).*
 
-> **To update this screenshot**: run the app (`python app.py`), navigate to `http://localhost:5000`, and save a capture to `docs/screenshots/matrix.png`.
+| Framework landing page | Stage × Advantage view |
+|---|---|
+| ![Framework](docs/screenshots/framework.png) | ![Advantage](docs/screenshots/advantage.png) |
+
+| Autonomy Scatter | Agent Finder (Guide) |
+|---|---|
+| ![Autonomy scatter](docs/screenshots/autonomy.png) | ![Guide](docs/screenshots/guide.png) |
+
+*PDF export sample:* ![PDF export](docs/screenshots/pdf_export.png)
+
+> **To refresh a screenshot**: run the app (`python app.py`), navigate to the relevant page, and overwrite the matching file in `docs/screenshots/`.
 
 ---
 
 ## Features
 
-### Classification Matrix (`/`)
-- **5D cube matrix** — Complexity tiers (rows) × Investment process stages (columns), populated with colour-coded agent badges
+### Framework Landing Page (`/`, `/framework`)
+- **Five-dimension explainer** — complexity, process stage, comparative advantage, autonomy, and product type, framed as one coordinate system
+- **Category Cluster section** — the 10 functional categories (CAT-1…CAT-10) explained as cross-cutting lenses over the 5 dimensions
+- **Animated CTA** — pulsing "Explore the Matrix" button linking through to `/matrix`
+
+### Classification Matrix (`/matrix`) — 3 toggleable views
+- **Classification Matrix** — Complexity tiers (rows) × Investment process stages (columns), populated with colour-coded agent badges in a 3D-cube-styled widget
+- **Stage × Advantage** — same agents pivoted by comparative advantage (informational / analytical / behavioral) instead of complexity
+- **Autonomy Scatter** — Gantt-style bar chart; Y-axis = autonomy tier (Fully Autonomous → High → Medium → Low), solid segments for contiguous stage coverage, dashed bridges for non-adjacent stages, in-bar labels colored by comparative advantage, click any bar to navigate to the agent profile
 - **Three-channel badge encoding** — fill/border color = comparative advantage (orange/green/rust), border style = agent type (solid/outlined/dashed), bottom-right pip = autonomy level (grey/amber/orange/crimson-pulsing)
 - **Fully Autonomous tier** — fourth autonomy level with a pulsing crimson pip for systems with no human veto on individual decisions (e.g. AIEQ, Numerai)
 - **Advantage filter** — live client-side filter to isolate informational / analytical / behavioral agents
 - **Hover cards** — rich tooltip on badge hover showing name, description, all classification dimensions, and stage list
 - **Dashboard stats** — live counts for classified agents, complexity distribution, agent type split, and stage coverage
 
-### Autonomy Scatter Plot (`/` → toggle)
-- **Gantt-style bar chart** — each agent rendered as a horizontal bar spanning its covered investment stages
-- **Y-axis** = autonomy tier (Fully Autonomous → High → Medium → Low, top to bottom)
-- **Solid segments** for contiguous stage coverage; **dashed bridges** for non-adjacent stages
-- **In-bar labels** colored by comparative advantage; click any bar to navigate to the agent profile
-
 ### Agent Pipeline (`/pipeline`)
-- **Lifecycle table** — all agents with status, type, complexity, advantage, autonomy, and stage coverage at a glance
+- **Lifecycle table** — all agents with status, type, complexity, advantage, autonomy, category, and stage coverage at a glance
 - **Status filter** — view pending / classified / rejected agents independently
 - **Quick-add** — add a new agent by name and URL only (creates a `pending` record instantly)
 - **Reject / Restore / Delete** — full lifecycle management from the table
 
-### Agent Finder — 4-Step Questionnaire (`/guide`)
-- **Progressive questionnaire** — 4 steps: investment stage → comparative advantage → autonomy level → complexity tier
+### Agent Finder — 5-Step Questionnaire (`/guide`)
+- **Progressive questionnaire** — 5 steps: investment stage → comparative advantage → autonomy level → complexity tier → category label
 - **Client-side filtering** — all agent data embedded at page load; no round-trips per filter step
-- **Result cards** — sorted by stage-overlap count, each card shows classification dims, key features, and a link to the full profile
-- **Auto-advance** — steps 2–4 advance automatically on radio selection for fast navigation
+- **Result cards** — sorted by stage-overlap count; each card shows classification dims, category label, key features, a link to the full profile, and an external "open tool" link when a URL is set
+- **Auto-advance** — steps 2–5 advance automatically on radio/chip selection for fast navigation
 
 ### 4-Step Classification Wizard (`/add`, `/edit/<id>`, `/agents/<id>/classify`)
 - **Unified wizard** — same 4-step interface for adding, editing, and classifying agents
 - **Session-backed draft** — `session['wizard_draft']` persists across steps; no partial database writes
-- **Step 1** — name, URL, description, agent type
+- **Step 1** — name, URL, description, agent type, category label
 - **Step 2** — investment process stages (checkboxes, ≥1 required)
 - **Step 3** — complexity tier, comparative advantage, autonomy (visual radio cards)
 - **Step 4** — structured rationale (6 framework-keyed fields) + key features (3–6 repeating inputs)
@@ -78,8 +89,14 @@ The complexity dimension adapts Nassim Nicholas Taleb's *Black Swan* theory (200
 ### Agent Detail Page (`/agents/<id>`)
 - **Hero header** — agent name, status/type badges, URL, creation date
 - **Description + features** — full technical summary and bullet-point feature list
-- **Sticky classification sidebar** — large visual metric blocks per classification axis with rationale text
+- **Sticky classification sidebar** — large visual metric blocks per classification axis, category label + description, with rationale text
 - **Stage pills** — all covered investment stages rendered as colored chips
+
+### Admin Panel (`/admin`)
+- **Flask-Admin CRUD** — searchable, filterable list view over the full `agents` table
+- **Dropdowns for every enum field** (status, advantage, complexity, autonomy, agent_type, category) instead of raw text inputs
+- **JSON validation** on save for the three JSON columns (`stages`, `key_features`, `rationale`)
+- **No authentication** — intended for local/internal use only; see Known Issues in `docs/DEV_LOG.md`
 
 ### AI Auto-Classifier (`auto_classify.py`)
 - **Claude-powered** — uses `claude-opus-4-8` with tool-forced structured output
@@ -106,7 +123,7 @@ Exports include **classified agents only** — pending and rejected agents are e
 
 ## Agent Catalogue
 
-The live database contains **77 classified agents** spanning commercial products, in-house systems, and academic prototypes. Representative entries include:
+The live database contains **78 classified agents** (81 total tracked, including pending and rejected) spanning commercial products, in-house systems, and academic prototypes, organized into 10 functional categories (CAT-1 through CAT-10 — see [CLASSIFICATION_GUIDE.md](docs/CLASSIFICATION_GUIDE.md#4a-category-label)). Representative entries include:
 
 **Fully Autonomous** — AIEQ/EquBot · Numerai Meta Model
 
@@ -123,12 +140,14 @@ The live database contains **77 classified agents** spanning commercial products
 | Layer | Technology |
 |---|---|
 | Web framework | Flask |
-| ORM / DB | SQLAlchemy + SQLite |
+| ORM / DB | SQLAlchemy — SQLite (local dev) or PostgreSQL (production, via `DATABASE_URL`) |
+| Admin CRUD | Flask-Admin (`/admin`) |
 | Frontend | Bootstrap 5.3.3 + vanilla JS |
 | AI auto-classifier | Anthropic Claude API (`claude-opus-4-8`) |
 | Excel export | openpyxl |
 | Word export | python-docx |
 | PDF export | ReportLab |
+| Production server | gunicorn, deployed on Railway |
 
 ---
 
@@ -136,8 +155,8 @@ The live database contains **77 classified agents** spanning commercial products
 
 ```bash
 git clone <repo-url>
-cd AI_classification/ai_agent_classifier
-pip install flask flask-sqlalchemy python-docx openpyxl reportlab anthropic
+cd AI_classification
+pip install -r requirements.txt
 ```
 
 **Optional — for AI auto-classification:**
@@ -148,6 +167,13 @@ set ANTHROPIC_API_KEY=sk-ant-...
 # macOS / Linux
 export ANTHROPIC_API_KEY=sk-ant-...
 ```
+
+**Optional — for a PostgreSQL backend** (e.g. mirroring the Railway deployment), also install the driver and set `DATABASE_URL` — it is not yet pinned in `requirements.txt`:
+```bash
+pip install psycopg2-binary
+set DATABASE_URL=postgresql://...   # macOS/Linux: export DATABASE_URL=...
+```
+Without `DATABASE_URL` set, the app falls back to local SQLite automatically.
 
 ---
 
@@ -160,10 +186,11 @@ python app.py
 
 Navigate to `http://localhost:5000`. The SQLite database is created automatically on first run.
 
-**Seed the catalogue** (77 pre-classified agents):
+**Seed the catalogue** (78 pre-classified agents):
 ```bash
 python build_agents_db.py
 ```
+Safe to re-run — it skips agents that already exist by name.
 
 ---
 
@@ -177,7 +204,24 @@ python auto_classify.py
 python auto_classify.py add "Agent Name" --url https://example.com
 ```
 
-See [CLASSIFICATION_GUIDE.md](CLASSIFICATION_GUIDE.md) for the full Swan Theory framework and classification decision heuristics.
+See [CLASSIFICATION_GUIDE.md](docs/CLASSIFICATION_GUIDE.md) for the full Swan Theory framework and classification decision heuristics.
+
+---
+
+## Deployment
+
+The live instance linked above runs on **Railway**. `Procfile` defines the start command:
+```
+web: cd ai_agent_classifier && gunicorn app:app --bind 0.0.0.0:$PORT --workers 2
+```
+
+| Env var | Purpose |
+|---|---|
+| `DATABASE_URL` | Railway-provisioned PostgreSQL connection string |
+| `SECRET_KEY` | Flask session secret — set this in production, or sessions reset on every restart |
+| `ANTHROPIC_API_KEY` | Only needed if running `auto_classify.py` against the deployed environment |
+
+To copy existing local SQLite data into a fresh PostgreSQL database, run `ai_agent_classifier/migrate_to_postgres.py` with `DATABASE_URL` set.
 
 ---
 
@@ -186,29 +230,37 @@ See [CLASSIFICATION_GUIDE.md](CLASSIFICATION_GUIDE.md) for the full Swan Theory 
 ```
 AI_classification/
 ├── README.md
-├── CLAUDE.md                          ← developer context for AI tooling
-├── DEV_LOG.md                         ← rolling development log
-├── CLASSIFICATION_GUIDE.md            ← Swan Theory framework + classification guide
+├── requirements.txt                   ← pip dependencies (installed from repo root)
+├── Procfile                           ← Railway/gunicorn start command
+├── docs/
+│   ├── CLAUDE.md                      ← developer context for AI tooling
+│   ├── DEV_LOG.md                     ← rolling development log
+│   ├── CLASSIFICATION_GUIDE.md        ← Swan Theory framework + classification guide
+│   └── screenshots/                   ← matrix, framework, guide, autonomy, advantage, pdf_export PNGs
+├── presentation/
+│   ├── build_deck.py                  ← python-pptx generator for the stakeholder deck
+│   └── Panthera_AI_Agent_Classifier.pptx
 └── ai_agent_classifier/
     ├── app.py                         ← Flask routes + session wizard
     ├── models.py                      ← SQLAlchemy Agent model
     ├── auto_classify.py               ← Claude API batch classifier
     ├── exports.py                     ← Excel / Word / PDF export engine
-    ├── build_agents_db.py             ← seeds 77 pre-classified agents
-    ├── requirements.txt
+    ├── build_agents_db.py             ← seeds 78 pre-classified agents (idempotent)
+    ├── migrate_to_postgres.py         ← one-time SQLite → Railway PostgreSQL data copy
     ├── instance/
-    │   └── agents.db                  ← SQLite database
+    │   └── agents.db                  ← SQLite database (local dev only)
     ├── static/
     │   ├── css/style.css              ← design system (CSS custom properties)
     │   ├── js/app.js                  ← Bootstrap tooltip init + flash dismiss
     │   └── img/                       ← Panthera logo
     └── templates/
         ├── base.html                  ← master layout
-        ├── matrix.html                ← classification matrix + autonomy scatter
+        ├── framework.html             ← landing page (`/`, `/framework`) — 5-dimension explainer
+        ├── matrix.html                ← classification matrix (`/matrix`) + stage×advantage + autonomy scatter
         ├── pipeline.html              ← agent lifecycle table
         ├── wizard.html                ← 4-step classification wizard
         ├── agent_detail.html          ← per-agent profile
-        └── guide.html                 ← Agent Finder questionnaire
+        └── guide.html                 ← Agent Finder — 5-step questionnaire
 ```
 
 ---

@@ -2,7 +2,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // ── Bootstrap tooltip initialisation ─────────────────────────────────────
   document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
-    new bootstrap.Tooltip(el, { trigger: "hover" });
+    new bootstrap.Tooltip(el, { trigger: "hover", container: "body" });
+  });
+
+  // ── Bootstrap popover initialisation ("?" framework-help bubbles) ────────
+  // container: "body" — these icons live inside scrollable/overflow-clipped
+  // widgets (the matrix, scatter chart); anchoring to body keeps the bubble
+  // from being clipped or painted underneath those containers.
+  document.querySelectorAll('[data-bs-toggle="popover"]').forEach(function (el) {
+    new bootstrap.Popover(el, { trigger: "hover focus", container: "body" });
   });
 
   // ── Auto-dismiss flash alerts after 4 seconds ─────────────────────────────

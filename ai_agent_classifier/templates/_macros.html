@@ -1,0 +1,27 @@
+{# Reusable "?" hover-bubble — pass a title and a body string (plain text, \n\n for paragraph breaks) #}
+{% macro info_icon(title, body) -%}
+<span class="info-icon" tabindex="0" role="button" aria-label="{{ title }}"
+      data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-html="false"
+      data-bs-placement="top" data-bs-title="{{ title }}" data-bs-content="{{ body }}">?</span>
+{%- endmacro %}
+
+{# "Add to stack" choice — full catalogue record vs. a bare name+link placeholder.
+   size: 'lg' (spacious recommendation cards) or 'sm' (tight gap-search popouts). #}
+{% macro add_to_stack(agent, anchor='', size='lg') -%}
+<div class="ent-add-actions ent-add-actions-{{ size }}">
+  <form method="POST" action="{{ url_for('enterprise_toggle', agent_id=agent.id) }}">
+    {% if anchor %}<input type="hidden" name="anchor" value="{{ anchor }}" />{% endif %}
+    <button type="submit" class="ent-add-btn ent-add-btn-full"
+            title="Add this tool with its existing catalogue description, classification and rationale">
+      {%- if size == 'lg' -%}+ Add with full details{%- else -%}+ Full{%- endif -%}
+    </button>
+  </form>
+  <form method="POST" action="{{ url_for('enterprise_add_minimal', agent_id=agent.id) }}">
+    {% if anchor %}<input type="hidden" name="anchor" value="{{ anchor }}" />{% endif %}
+    <button type="submit" class="ent-add-btn ent-add-btn-minimal"
+            title="Add just the name and link as a placeholder — classify it yourself later from the Pipeline">
+      {%- if size == 'lg' -%}Add name &amp; link only{%- else -%}Name only{%- endif -%}
+    </button>
+  </form>
+</div>
+{%- endmacro %}

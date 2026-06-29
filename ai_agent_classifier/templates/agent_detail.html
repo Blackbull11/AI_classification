@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "_macros.html" as m %}
 {% block title %}{{ agent.name }} — AI Agent Classifier{% endblock %}
 
 {% block content %}
@@ -118,7 +119,7 @@
         <!-- Process Stages — full width at top -->
         {% if agent.stages_list %}
           <div class="detail-stages-block mb-3">
-            <div class="detail-metric-label mb-2">Process Stages</div>
+            <div class="detail-metric-label mb-2">Process Stages{{ m.info_icon(stage_dim_info.title, stage_dim_info.body) }}</div>
             <div class="d-flex flex-wrap gap-2">
               {% for sk in agent.stages_list %}
                 <span class="detail-stage-pill"
@@ -180,7 +181,7 @@
               <div class="detail-metric-block h-100"
                    style="background:{{ cx_bg.get(agent.complexity,'var(--bg-elevated)') }};
                           border-color:{{ cx_border.get(agent.complexity,'var(--border)') }}">
-                <div class="detail-metric-label">Complexity Tier</div>
+                <div class="detail-metric-label">Complexity Tier{{ m.info_icon(complexity_info[agent.complexity].title, complexity_info[agent.complexity].body) }}</div>
                 <div class="detail-metric-value" style="color:{{ cx_color.get(agent.complexity,'var(--text-primary)') }}">
                   {{ complexity_labels.get(agent.complexity, agent.complexity) }}
                 </div>
@@ -196,7 +197,10 @@
           <!-- Autonomy (narrower) -->
           <div class="col-5">
             <div class="detail-meta-block h-100">
-              <div class="detail-metric-label">Autonomy</div>
+              <div class="detail-metric-label">
+                Autonomy
+                {%- if agent.autonomy %}{{ m.info_icon(autonomy_info[agent.autonomy].title, autonomy_info[agent.autonomy].body) }}{% endif %}
+              </div>
               <div class="detail-meta-value">
                 {%- if agent.autonomy == 'full' %}Fully Autonomous
                 {%- elif agent.autonomy %}{{ agent.autonomy|title }}

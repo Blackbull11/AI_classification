@@ -138,6 +138,20 @@ html, body {
 .form-control::placeholder { color: var(--text-muted); }
 .form-label { color: var(--text-secondary); font-weight: 500; }
 
+/* Checkboxes / radios — Bootstrap defaults to its own blue; match the app's copper accent */
+.form-check-input {
+  background-color: var(--bg-input);
+  border-color: var(--border);
+}
+.form-check-input:checked {
+  background-color: var(--accent) !important;
+  border-color: var(--accent) !important;
+}
+.form-check-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(196,132,90,0.2);
+}
+
 /* ── Bootstrap override: tables ────────────────────────────────────────── */
 .table {
   --bs-table-bg:           var(--bg-surface);
@@ -1988,3 +2002,383 @@ html, body {
 }
 .lc-adv-informational .cx-name { color: #6A4400 !important; }
 .lc-adv-informational .cx-sub  { color: #7A5010 !important; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   "?" INFO BUBBLES — framework help, hover/focus popovers
+═══════════════════════════════════════════════════════════════════════ */
+.info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(196,132,90,0.18);
+  border: 1px solid rgba(196,132,90,0.45);
+  color: var(--accent);
+  font-size: 9.5px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: help;
+  margin-left: 5px;
+  vertical-align: middle;
+  user-select: none;
+  flex-shrink: 0;
+  transition: background 0.12s, color 0.12s;
+}
+.info-icon:hover, .info-icon:focus {
+  background: var(--accent);
+  color: #fff;
+  outline: none;
+}
+/* On the beige matrix / scatter widgets the default copper tone is hard to read */
+.matrix-widget .info-icon,
+.scatter-widget .info-icon {
+  background: rgba(90,58,20,0.16);
+  border-color: rgba(90,58,20,0.45);
+  color: #5A3A10;
+}
+.matrix-widget .info-icon:hover, .matrix-widget .info-icon:focus,
+.scatter-widget .info-icon:hover, .scatter-widget .info-icon:focus {
+  background: #5A3A10;
+  color: #FAF7F1;
+}
+/* On dark label cells (black / dark-grey rows) lighten so it stays legible */
+.lc-black .info-icon, .lc-dark-grey .info-icon {
+  background: rgba(255,255,255,0.16);
+  border-color: rgba(255,255,255,0.35);
+  color: #ECECEC;
+}
+
+.popover {
+  --bs-popover-bg: #202020;
+  --bs-popover-border-color: var(--border);
+  --bs-popover-header-bg: var(--bg-elevated);
+  --bs-popover-header-color: var(--accent);
+  --bs-popover-body-color: var(--text-secondary);
+  --bs-popover-max-width: 300px;
+  box-shadow: 0 10px 32px rgba(0,0,0,0.55);
+}
+.popover-header { font-size: 12.5px; font-weight: 700; }
+.popover-body { font-size: 12px; line-height: 1.65; white-space: pre-line; }
+
+/* Plain hover tooltips (chip blurbs) — match the popover's dark styling */
+.tooltip {
+  --bs-tooltip-bg: #202020;
+  --bs-tooltip-color: var(--text-secondary);
+  --bs-tooltip-opacity: 1;
+}
+.tooltip .tooltip-inner { font-size: 11.5px; box-shadow: 0 6px 20px rgba(0,0,0,0.5); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ENTERPRISE STACK — tool picker + benchmark cartography + recommendations
+═══════════════════════════════════════════════════════════════════════ */
+.ent-intro {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-width: 760px;
+}
+.ent-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+.ent-section-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+
+/* Tool picker table */
+.ent-picker-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.ent-search-input { max-width: 280px; }
+.ent-picker-count {
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Dismissible / re-addable "Commercial only" filter chip */
+.ent-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.ent-filter-chip:hover { border-color: var(--accent); }
+.ent-filter-chip.active {
+  background: var(--accent-muted);
+  border-color: rgba(196,132,90,0.45);
+  color: var(--accent);
+}
+.ent-filter-chip-x { font-size: 10px; opacity: 0.85; }
+
+/* Picker sits in its own elevated card, like every other section on the page */
+.ent-picker-card { border-radius: 14px; }
+
+.ent-picker-table-wrap {
+  max-height: 460px;
+  overflow-y: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+}
+.ent-picker-table-wrap table { margin-bottom: 0; }
+.ent-picker-table-wrap thead th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+.ent-picker-table-wrap td { padding-top: 8px; padding-bottom: 8px; }
+.ent-row-checked { background: rgba(196,132,90,0.10) !important; }
+.ent-row-unclassified { opacity: 0.7; }
+
+.ent-agent-link {
+  color: var(--text-primary);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.12s;
+}
+.ent-agent-link:hover { color: var(--accent); }
+
+.ent-type-pill {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 2px 7px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.ent-type-pill-commercial { color: #9BB0D8; }
+.ent-type-pill-in-house   { color: #9BD0B0; }
+.ent-type-pill-academic   { color: #CBA8E0; }
+
+.ent-pending-pill {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--inf);
+  background: rgba(239,159,39,0.15);
+  border: 1px solid rgba(239,159,39,0.35);
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-left: 6px;
+}
+.ent-save-bar {
+  position: sticky;
+  bottom: 0;
+  background: var(--bg-surface);
+  padding: 14px 0 2px;
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* Stack list */
+.ent-stack-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-surface);
+}
+.ent-stack-empty {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 28px 16px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+}
+
+/* Gap-search button + panel inside the benchmark matrix */
+.gap-search-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(196,132,90,0.14);
+  border: 1px dashed rgba(196,132,90,0.55);
+  color: #7A4A20;
+  border-radius: 14px;
+  padding: 4px 9px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  margin: auto;
+  transition: background 0.12s, color 0.12s;
+}
+.gap-search-btn:hover, .gap-search-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.gap-count {
+  background: rgba(0,0,0,0.12);
+  border-radius: 8px;
+  padding: 0 5px;
+}
+.gap-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #222;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px;
+  min-width: 220px;
+  max-width: 260px;
+  max-height: 220px;
+  overflow-y: auto;
+  box-shadow: 0 10px 32px rgba(0,0,0,0.6);
+  z-index: 50;
+}
+.gap-candidate {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+  padding: 7px 4px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.gap-candidate:last-child { border-bottom: none; }
+.gap-candidate-name a {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+.gap-candidate-name a:hover { color: var(--accent); }
+.gap-candidate-meta {
+  display: block;
+  font-size: 9.5px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+.gap-dead-note {
+  font-size: 9px;
+  color: rgba(140,100,50,0.55);
+  text-align: center;
+  display: block;
+  margin-top: 2px;
+}
+
+/* ── "Add to stack" choice buttons — full record vs. name+link only ──────── */
+.ent-add-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.ent-add-btn {
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: filter 0.12s, background 0.12s, color 0.12s;
+}
+.ent-add-btn-full {
+  background: var(--ana);
+  color: #fff;
+  border: none;
+}
+.ent-add-btn-full:hover { filter: brightness(1.12); }
+.ent-add-btn-minimal {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+.ent-add-btn-minimal:hover { background: var(--bg-elevated); color: var(--text-primary); }
+
+/* Compact variant — used inside the small gap-search popouts */
+.ent-add-actions-sm { gap: 5px; }
+.ent-add-actions-sm form { flex: 1; }
+.ent-add-actions-sm .ent-add-btn { width: 100%; font-size: 10.5px; padding: 4px 6px; }
+
+/* Spacious variant — used on the Recommended Additions cards */
+.ent-add-actions-lg .ent-add-btn-full {
+  font-size: 13px;
+  padding: 9px 18px;
+  box-shadow: 0 3px 14px rgba(29,184,122,0.38);
+}
+.ent-add-actions-lg .ent-add-btn-minimal { font-size: 12px; padding: 9px 14px; }
+
+/* ── Recommendation cards ─────────────────────────────────────────────────── */
+.ent-reco-card { transition: border-color 0.15s; }
+.ent-reco-card:hover { border-color: var(--accent) !important; }
+.ent-reco-name {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-decoration: none;
+  line-height: 1.3;
+}
+.ent-reco-name:hover { color: var(--accent); }
+.ent-reco-fill-badge {
+  flex-shrink: 0;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-muted);
+  border: 1px solid rgba(196,132,90,0.35);
+  border-radius: 12px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+.ent-reco-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 10px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ent-reco-stages {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.ent-reco-stages-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.ent-reco-details-link {
+  display: block;
+  margin-top: 8px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  text-decoration: none;
+}
+.ent-reco-details-link:hover { color: var(--accent); }

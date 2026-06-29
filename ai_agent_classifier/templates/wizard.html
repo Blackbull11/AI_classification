@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "_macros.html" as m %}
 {% block title %}
   {% if mode == 'edit' %}Edit Agent{% elif mode == 'classify' %}Classify Agent{% else %}Add Agent{% endif %}
   — AI Agent Classifier
@@ -111,7 +112,7 @@
 
         <!-- ════════════════════════════════════════════════════════ STEP 2 -->
         {% elif step == 2 %}
-          <h5 class="fw-bold mb-1">Step 2: Investment Process Coverage</h5>
+          <h5 class="fw-bold mb-1">Step 2: Investment Process Coverage{{ m.info_icon(stage_dim_info.title, stage_dim_info.body) }}</h5>
           <p class="text-muted fst-italic small mb-4">
             Select all that apply — an agent can span multiple stages
           </p>
@@ -141,7 +142,7 @@
                          value="{{ val }}"
                          {% if val in draft.get('stages', []) %}checked{% endif %} />
                   <div>
-                    <strong>{{ label }}</strong>
+                    <strong>{{ label }}{{ m.info_icon(stage_info[val].title, stage_info[val].body) }}</strong>
                     <div class="text-muted small">{{ desc }}</div>
                   </div>
                 </label>
@@ -210,7 +211,7 @@
 
             <!-- Section B: Complexity — decision tree -->
             <div class="mb-4">
-              <h6 class="fw-bold mb-3">B. What complexity regime does this agent operate in?</h6>
+              <h6 class="fw-bold mb-3">B. What complexity regime does this agent operate in?{{ m.info_icon(complexity_dim_info.title, complexity_dim_info.body) }}</h6>
 
               <!-- Decision tree -->
               <div class="card mb-3 p-3" id="decisionTree">
@@ -285,7 +286,7 @@
                            value="{{ val }}" id="cx_{{ val }}"
                            {% if draft.get('complexity') == val %}checked{% endif %} />
                     <div>
-                      <strong>{{ label_cx }}</strong>
+                      <strong>{{ label_cx }}{{ m.info_icon(complexity_info[val].title, complexity_info[val].body) }}</strong>
                       <div class="text-muted small">{{ desc_cx }}</div>
                     </div>
                   </label>
@@ -295,7 +296,7 @@
 
             <!-- Section C: Autonomy -->
             <div class="mb-4">
-              <h6 class="fw-bold mb-3">C. What level of autonomy does this agent exercise?</h6>
+              <h6 class="fw-bold mb-3">C. What level of autonomy does this agent exercise?{{ m.info_icon(autonomy_dim_info.title, autonomy_dim_info.body) }}</h6>
               <div class="d-flex flex-column gap-2">
                 {% for val, label, desc in [
                   ('low',    'Low',              'Decision support only — provides information or nudges; human acts'),
@@ -309,7 +310,7 @@
                            value="{{ val }}"
                            {% if draft.get('autonomy') == val %}checked{% endif %} />
                     <div>
-                      <strong>{{ label }}</strong>
+                      <strong>{{ label }}{{ m.info_icon(autonomy_info[val].title, autonomy_info[val].body) }}</strong>
                       <div class="text-muted small">{{ desc }}</div>
                     </div>
                   </label>
