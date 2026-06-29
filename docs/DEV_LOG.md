@@ -35,7 +35,9 @@
 | Autonomy Scatter Plot view | ✅ Complete | Toggle on matrix page; dots = agents, X=stage, Y=autonomy |
 | Flask-Admin panel (`/admin`) | ✅ Complete | CRUD over `agents` table; no authentication (see Known Issues) |
 | Category Label system (10 categories) | ✅ Complete | `category_id` column, wizard step 1 select, Guide Q5 filter, agent detail block |
-| PostgreSQL support (`DATABASE_URL`) | ⚠️ Mostly complete | App connects fine; `psycopg2-binary` not yet pinned in `requirements.txt` (see Known Issues) |
+| PostgreSQL support (`DATABASE_URL`) | ✅ Complete | `psycopg2-binary` pinned in `requirements.txt` as of 2026-06-29; the live Railway service needs a redeploy to pick it up |
+| Enterprise Stack (`/enterprise`) | ✅ Complete | `Agent.in_stack` flag; tool picker w/ default-on commercial filter; benchmark coverage map; gap search; commercial-only recommendations; full-vs-name-only add choice |
+| In-app "?" help bubbles | ✅ Complete | `COMPLEXITY_INFO` / `AUTONOMY_INFO` / `STAGE_INFO` dicts injected via `inject_globals()`; rendered by `_macros.html`'s `info_icon()` on matrix, wizard, guide, pipeline, agent detail, enterprise |
 
 ---
 
@@ -46,10 +48,11 @@
 - [ ] No authentication / user accounts — app is open to anyone on the network. `/admin` (Flask-Admin) is also unauthenticated.
 - [ ] `seed_data.py` is disabled (returns early); either clean up or re-enable
 - [x] ~~No `.gitignore` exists at project root~~ — resolved; `.gitignore` now exists and covers `__pycache__/`, `.env`, `ai_agent_classifier/*.txt`, etc.
-- [ ] `requirements.txt` is missing `psycopg2-binary` even though `app.py` supports a `postgresql://` `DATABASE_URL` (added 2026-06-19) — a clean install can't actually connect to Postgres until this is added
+- [x] ~~`requirements.txt` is missing `psycopg2-binary`~~ — resolved 2026-06-29, added after a live Railway crash loop (`ModuleNotFoundError: No module named 'psycopg2'`); **a redeploy is still required** for the running service to pick it up
 - [ ] Several debug/migration DB artifacts are tracked in git and not gitignored: `ai_agent_classifier/agents_production.db`, `instance/agents copy.db`, `instance/agents_broken.db`, `instance/agents_temp.db`, `instance/agents_b64.txt` — leftovers from the 2026-06-19 Postgres migration
 - [ ] No unit or integration tests
 - [ ] ARKEN Finance (ID:37) URL (`arkenfinance.com`) resolves to a DeFi swap platform — correct URL unknown, needs manual verification
+- [ ] Panthera Decision GPS is tagged `agent_type="commercial"` in the seed data, which surfaces it in the Enterprise Stack's commercial-only filter and recommendation module, but it reads elsewhere (README catalogue list, framework page examples) as an in-house build — flagged 2026-06-29, not corrected (data classification call, needs manual review)
 
 ---
 
@@ -512,6 +515,29 @@
 - `DEV_LOG.md` (repo root) — removed; was a duplicate of this file with diverging content
 
 **Open items**: `requirements.txt` still needs `psycopg2-binary` added for the documented Postgres path to actually work from a clean install (flagged, not fixed — out of scope for a docs-only pass). Tracked DB artifact files (`agents_production.db`, `instance/agents copy.db`, `instance/agents_broken.db`, `instance/agents_temp.db`, `instance/agents_b64.txt`) still need cleanup/gitignoring.
+
+---
+
+### 2026-06-29 — Enterprise Stack feature + docs refresh + production psycopg2 fix
+
+**Summary**: Built the Enterprise Stack page (`/enterprise`) end-to-end across several requests in one session: a tool picker (commercial-only filter, default on, removable) for flagging which catalogue agents a firm runs; a benchmark coverage map (the main matrix scoped to the user's stack); a "Find solutions" gap-search popout on every empty cell; count-based "Stack composition" charts (corrected mid-session from a catalogue-ratio version to plain counts per the user's explicit request); a commercial-only "Recommended additions" module ranked by gaps filled; and a deliberate two-way "add to stack" choice (full catalogue record vs. a decoupled name+link placeholder). Also added "?" hover/focus help bubbles (Complexity Tier, all 4 autonomy levels, all 7 process stages) across Matrix, Wizard, Guide, Pipeline, and Agent Detail. Mid-session, a user report ("the picker isn't as elegant as the rest of the app") surfaced and fixed an app-wide issue: every checkbox/radio in the app was rendering Bootstrap's default blue instead of the copper accent. Finished with a full documentation pass (this entry) and, while reviewing `requirements.txt` for that pass, the user pasted live Railway crash logs (`ModuleNotFoundError: No module named 'psycopg2'`) — the exact gap already flagged in this log's Known Issues since 2026-06-19 — so `psycopg2-binary` was added immediately rather than left as a doc note.
+
+**Files changed**:
+- `ai_agent_classifier/models.py` — added `Agent.in_stack` (Boolean, default False)
+- `ai_agent_classifier/app.py` — `_migrate_db()` adds the `in_stack` column; `COMPLEXITY_DIMENSION_INFO`/`COMPLEXITY_INFO`/`AUTONOMY_DIMENSION_INFO`/`AUTONOMY_INFO`/`STAGE_DIMENSION_INFO`/`STAGE_INFO` help-text dicts injected via `inject_globals()`; `enterprise()`, `enterprise_save()`, `enterprise_toggle()`, `enterprise_add_minimal()` routes; `quick_add()` extended with optional `next`/`in_stack` form fields; `gap_candidates` construction now excludes agents already represented in the stack by name (`stack_names`), and `reco_score` derives recommendations from it
+- `ai_agent_classifier/templates/_macros.html` — new file: `info_icon()` macro, `add_to_stack()` macro (full-details vs. name-only buttons)
+- `ai_agent_classifier/templates/enterprise.html` — new file: stat cards, tool picker (search + commercial-only filter chip + Type column), benchmark coverage map, stack-composition bar charts, recommended-additions cards, quick-add modal
+- `ai_agent_classifier/templates/base.html` — "Enterprise Stack" nav link with in-stack count badge
+- `ai_agent_classifier/templates/matrix.html`, `wizard.html`, `guide.html`, `pipeline.html`, `agent_detail.html` — `info_icon()` calls added at relevant headers/labels/options
+- `ai_agent_classifier/static/css/style.css` — `.info-icon`, `.popover`/`.tooltip` dark-theme overrides, global `.form-check-input:checked` accent fix, full `.ent-*` / `.gap-*` rule set for the picker, benchmark matrix gap-search, and recommendation cards
+- `ai_agent_classifier/static/js/app.js` — popover init (`container: "body"` to escape `overflow:auto` ancestors); tooltip init updated to match
+- `requirements.txt` (repo root) — added `psycopg2-binary`
+
+**Design decisions**: see the new "Enterprise Stack" and updated "Key Design Decisions" sections in `docs/CLAUDE.md` — single `in_stack` flag (no Profile entity), dedup-by-name so an added tool stops being recommended, recommendations re-derived from `gap_candidates` rather than a second query, stack-composition charts intentionally count-based not catalogue-relative, `container: "body"` on all popovers/tooltips.
+
+**Known issues found, not fixed**: Panthera Decision GPS is seeded as `agent_type="commercial"`, which pulls it into the Enterprise Stack's commercial-only filter and recommendations, but other docs describe it as in-house — added to Known Issues below.
+
+**Open items**: `psycopg2-binary` is now in `requirements.txt`, but the **running Railway service still needs a redeploy** (commit + push, or however this repo's Railway pipeline triggers) to actually pick it up — editing the file locally does not fix the already-crash-looping workers by itself. Tracked DB artifact files from the 2026-06-19 Postgres migration are still un-gitignored (unchanged from prior entries).
 
 ---
 

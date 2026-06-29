@@ -1,6 +1,6 @@
 # Panthera AI Agent Classifier
 
-A web application for cataloguing, classifying, and exporting AI agents used in investment management, built around a peer-reviewed multi-dimensional classification framework.
+A web application for cataloguing, classifying, and exporting AI agents used in investment management, built around a peer-reviewed multi-dimensional classification framework — and for benchmarking your own firm's AI tool stack against it via the [Enterprise Stack](#enterprise-stack-enterprise) page.
 
 [Explore the app](https://panthera-ai-classification-matrix.up.railway.app)
 
@@ -65,25 +65,38 @@ The complexity dimension adapts Nassim Nicholas Taleb's *Black Swan* theory (200
 - **Advantage filter** — live client-side filter to isolate informational / analytical / behavioral agents
 - **Hover cards** — rich tooltip on badge hover showing name, description, all classification dimensions, and stage list
 - **Dashboard stats** — live counts for classified agents, complexity distribution, agent type split, and stage coverage
+- **Contextual help** — a "?" icon next to every complexity tier and process stage opens a plain-language explanation (definition + example), no framework knowledge required
 
 ### Agent Pipeline (`/pipeline`)
 - **Lifecycle table** — all agents with status, type, complexity, advantage, autonomy, category, and stage coverage at a glance
 - **Status filter** — view pending / classified / rejected agents independently
 - **Quick-add** — add a new agent by name and URL only (creates a `pending` record instantly)
 - **Reject / Restore / Delete** — full lifecycle management from the table
+- **Column tooltips** — "?" icons on Stage(s), Complexity, and Autonomy headers explain each dimension without leaving the table
 
 ### Agent Finder — 5-Step Questionnaire (`/guide`)
 - **Progressive questionnaire** — 5 steps: investment stage → comparative advantage → autonomy level → complexity tier → category label
 - **Client-side filtering** — all agent data embedded at page load; no round-trips per filter step
 - **Result cards** — sorted by stage-overlap count; each card shows classification dims, category label, key features, a link to the full profile, and an external "open tool" link when a URL is set
 - **Auto-advance** — steps 2–5 advance automatically on radio/chip selection for fast navigation
+- **Chip tooltips** — hover any stage, autonomy, or complexity chip for a one-line definition
+
+### Enterprise Stack (`/enterprise`)
+Turns the catalogue into a personal benchmarking tool: mark which AI tools your own firm actually runs, see exactly where the coverage gaps are, and get pointed at commercial tools that would close them.
+- **Tool picker** — a searchable, checkbox-driven table of every catalogue agent, defaulting to a **"Commercial only" filter** (one click removes it, one click re-applies it) since in-house and academic tools aren't something you can simply go acquire
+- **Custom tools** — not in the catalogue? Add one by name + URL; it lands in the Pipeline to be classified later so it can join the coverage map
+- **Benchmark coverage map** — the same Complexity × Stage cartography as the main Matrix, populated only with your selected tools
+- **"Find solutions" gap search** — every empty cell on *your* map shows a button listing catalogue tools (not yet in your stack) that would fill it, with a one-click add — or a plain "no tool yet" note if the catalogue has no answer either
+- **Recommended additions** — up to 6 commercial-only tools, ranked by how many of your coverage gaps each one would close
+- **Two ways to add a tool** — "+ Add with full details" keeps the catalogue's existing description and classification; "Add name & link only" creates a bare placeholder you classify yourself later, without inheriting the catalogue's opinion of it
+- **Stack composition charts** — plain agent counts per process stage, complexity tier, autonomy level, and comparative advantage (not a percentage of the wider catalogue)
 
 ### 4-Step Classification Wizard (`/add`, `/edit/<id>`, `/agents/<id>/classify`)
 - **Unified wizard** — same 4-step interface for adding, editing, and classifying agents
 - **Session-backed draft** — `session['wizard_draft']` persists across steps; no partial database writes
 - **Step 1** — name, URL, description, agent type, category label
 - **Step 2** — investment process stages (checkboxes, ≥1 required)
-- **Step 3** — complexity tier, comparative advantage, autonomy (visual radio cards)
+- **Step 3** — complexity tier, comparative advantage, autonomy (visual radio cards) — each option carries a "?" tooltip
 - **Step 4** — structured rationale (6 framework-keyed fields) + key features (3–6 repeating inputs)
 
 ### Agent Detail Page (`/agents/<id>`)
@@ -168,9 +181,8 @@ set ANTHROPIC_API_KEY=sk-ant-...
 export ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-**Optional — for a PostgreSQL backend** (e.g. mirroring the Railway deployment), also install the driver and set `DATABASE_URL` — it is not yet pinned in `requirements.txt`:
+**Optional — for a PostgreSQL backend** (e.g. mirroring the Railway deployment), `psycopg2-binary` is already in `requirements.txt`; just set `DATABASE_URL`:
 ```bash
-pip install psycopg2-binary
 set DATABASE_URL=postgresql://...   # macOS/Linux: export DATABASE_URL=...
 ```
 Without `DATABASE_URL` set, the app falls back to local SQLite automatically.
@@ -251,13 +263,15 @@ AI_classification/
     │   └── agents.db                  ← SQLite database (local dev only)
     ├── static/
     │   ├── css/style.css              ← design system (CSS custom properties)
-    │   ├── js/app.js                  ← Bootstrap tooltip init + flash dismiss
+    │   ├── js/app.js                  ← Bootstrap tooltip + popover init, flash dismiss
     │   └── img/                       ← Panthera logo
     └── templates/
         ├── base.html                  ← master layout
+        ├── _macros.html               ← shared Jinja macros — "?" help bubble, add-to-stack buttons
         ├── framework.html             ← landing page (`/`, `/framework`) — 5-dimension explainer
         ├── matrix.html                ← classification matrix (`/matrix`) + stage×advantage + autonomy scatter
         ├── pipeline.html              ← agent lifecycle table
+        ├── enterprise.html            ← Enterprise Stack (`/enterprise`) — picker, benchmark map, recommendations
         ├── wizard.html                ← 4-step classification wizard
         ├── agent_detail.html          ← per-agent profile
         └── guide.html                 ← Agent Finder — 5-step questionnaire

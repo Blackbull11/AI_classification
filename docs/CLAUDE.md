@@ -6,6 +6,7 @@
 
 - **Entry point**: `ai_agent_classifier/app.py` → `python app.py` (port 5000)
 - **Landing page**: `/` and `/framework` both serve the framework explainer (`framework()`); the classification matrix lives at `/matrix`
+- **Enterprise Stack**: `/enterprise` — a user flags which catalogue agents their own firm runs (`Agent.in_stack`), benchmarks that selection against the full catalogue on the same Complexity×Stage matrix, and gets commercial-only recommendations to close gaps — see [Enterprise Stack](#enterprise-stack)
 - **Database**: SQLite at `ai_agent_classifier/instance/agents.db` for local dev; **PostgreSQL in production** (Railway) via the `DATABASE_URL` env var — see [Deployment](#deployment)
 - **Framework**: Flask + SQLAlchemy (Python) · Bootstrap 5.3.3 dark theme (frontend) · Flask-Admin CRUD panel at `/admin`
 
@@ -37,7 +38,7 @@ For a PostgreSQL backend (Railway or otherwise), set:
 ```
 DATABASE_URL=postgresql://...
 ```
-> **Known gap**: `requirements.txt` does not pin `psycopg2-binary`, which `SQLALCHEMY_DATABASE_URI` needs to actually connect to a `postgresql://` URL. Install it manually until this is added. See Known Issues in `DEV_LOG.md`.
+> `psycopg2-binary` is pinned in `requirements.txt` (added 2026-06-29 after a Railway crash loop — `ModuleNotFoundError: No module named 'psycopg2'`). A deployed service still needs a redeploy to pick up the change; editing the file alone doesn't fix an already-running worker.
 
 ---
 
@@ -70,13 +71,15 @@ AI_classification/
     │   └── agents.db               ← SQLite database (local dev only; production uses PostgreSQL)
     ├── static/
     │   ├── css/style.css           ← Design system (CSS custom properties)
-    │   ├── js/app.js               ← Bootstrap tooltip init + flash dismiss
+    │   ├── js/app.js               ← Bootstrap tooltip + popover init, flash dismiss
     │   └── img/                    ← Panthera logo (PNG + SVG)
     └── templates/
         ├── base.html               ← Master layout (navbar, flash messages)
+        ├── _macros.html            ← Shared Jinja macros: `info_icon()` ("?" help bubble), `add_to_stack()` (full vs. name-only add buttons)
         ├── framework.html          ← Landing page (`/`, `/framework`) — 5-dimension explainer + category cluster
         ├── matrix.html             ← Classification matrix (`/matrix`): Complexity×Stage / Stage×Advantage / Autonomy Scatter views
         ├── pipeline.html           ← Agent lifecycle management table
+        ├── enterprise.html         ← Enterprise Stack (`/enterprise`) — tool picker, benchmark coverage map, recommendations
         ├── wizard.html             ← 4-step classification wizard
         ├── agent_detail.html       ← Per-agent profile view
         └── guide.html              ← Agent Finder — 5-step questionnaire (stage, advantage, autonomy, complexity, category)
@@ -104,6 +107,7 @@ AI_classification/
 | `stages` | TEXT | JSON array of stage keys |
 | `category_id` | TEXT | One of the 10 `CATEGORIES` ids defined in `app.py` (CAT-1…CAT-10), or `NULL` if uncategorized |
 | `status` | TEXT NOT NULL | `pending` · `classified` · `rejected` |
+| `in_stack` | BOOLEAN NOT NULL DEFAULT 0 | Flags this agent as part of the user's Enterprise Stack — added via `_migrate_db()` (`ALTER TABLE` guarded by a `PRAGMA table_info` check, same pattern as `category_id`) |
 | `created_at` | DATETIME | UTC creation timestamp |
 
 **Model helpers** (on `Agent` class):
@@ -186,6 +190,18 @@ A functional cluster describing the agent's primary role in the investment workf
 
 Some agents (general-purpose bank LLM suites, e.g. Goldman Sachs AI Assistant, JPMorgan LLM Suite) are intentionally left uncategorized — listed in `UNCATEGORIZED_AGENTS` — to avoid forcing a poor fit. **`auto_classify.py` does not assign `category_id`** — it is set only via seed data or manual edit. Full taxonomy history (CAT-5 dissolution, renames) is in `DEV_LOG.md` under "Taxonomy v2".
 
+### In-App Help ("?" Bubbles)
+
+Every dimension and value above is also explained inline via a small "?" hover/focus popover, so a user unfamiliar with Swan Theory doesn't need to leave the page they're on. Source of truth is four dicts in `app.py`, each entry shaped `{"label", "title", "blurb", "body"}` (`blurb` is a one-liner for native `title`-attribute tooltips on chips; `body` is the longer popover text, with `\n\n` for paragraph breaks):
+
+- `COMPLEXITY_DIMENSION_INFO` / `COMPLEXITY_INFO` (per tier: `white`, `light-grey`, `dark-grey`, `black`)
+- `AUTONOMY_DIMENSION_INFO` / `AUTONOMY_INFO` (per level: `low`, `medium`, `high`, `full`)
+- `STAGE_DIMENSION_INFO` / `STAGE_INFO` (per stage key)
+
+All seven dicts are injected into **every** template via `inject_globals()` (the same context processor that already provided `pending_count`/`today`), so no route needs to pass them explicitly. Templates render the bubble with the `info_icon(title, body)` macro from `templates/_macros.html`, e.g. `{{ m.info_icon(complexity_info[cx_key].title, complexity_info[cx_key].body) }}`. Bubbles appear on `matrix.html` (stage headers, complexity row labels, autonomy legends), `wizard.html` (step 2/3 option labels), `guide.html` (question headers + chip tooltips), `pipeline.html` (column headers), `agent_detail.html` (the agent's own complexity/autonomy/stage values), and `enterprise.html` (coverage-map headers).
+
+Implementation note: popovers/tooltips are initialized in `app.js` with `container: "body"` — several of these bubbles live inside `overflow:auto` widgets (the matrix scroll wrapper, the gap-search popout), and without `container: "body"` the floating bubble gets visually clipped/buried by its own ancestor instead of rendering on top.
+
 ---
 
 ## Flask Routes
@@ -197,6 +213,7 @@ Some agents (general-purpose bank LLM suites, e.g. Goldman Sachs AI Assistant, J
 | GET | `/matrix` | `matrix()` | Classification matrix — Complexity×Stage, Stage×Advantage, and Autonomy Scatter views |
 | GET | `/pipeline` | `pipeline()` | Agent lifecycle table |
 | GET | `/guide` | `guide()` | Agent Finder — 5-step questionnaire, JS-filtered results |
+| GET | `/enterprise` | `enterprise()` | Enterprise Stack — tool picker, benchmark coverage map, recommendations (see [Enterprise Stack](#enterprise-stack)) |
 | GET | `/add` | `add_agent()` | Start full wizard (add mode) |
 | POST | `/add/step/<n>` | `add_step()` | Wizard step n (1–4) |
 | POST | `/add/save` | `add_save()` | Save new agent (status: classified) |
@@ -211,10 +228,13 @@ Some agents (general-purpose bank LLM suites, e.g. Goldman Sachs AI Assistant, J
 ### Actions
 | Method | Path | Description |
 |---|---|---|
-| POST | `/quick-add` | Add agent with name + URL only (status: pending) |
+| POST | `/quick-add` | Add agent with name + URL only (status: pending). Optional form fields `next` (`"pipeline"` \| `"enterprise"`, default `"pipeline"`) and `in_stack` (truthy → sets `in_stack=True` and redirects back to `/enterprise`) let the Enterprise Stack page's "+ Add a custom tool" modal reuse this same route |
 | POST | `/agents/<id>/reject` | Mark agent as rejected |
 | POST | `/agents/<id>/restore` | Restore rejected → pending |
 | POST | `/delete/<id>` | Permanently delete agent |
+| POST | `/enterprise/save` | Bulk-set `in_stack` from the picker's checked `agent_ids[]` — unchecked agents are set to `False`, so this is a full sync, not additive |
+| POST | `/enterprise/toggle/<id>` | Flip one agent's `in_stack` (used by the matrix's gap-search "+ Add with full details" / hover-card "Remove", and the recommendation cards) |
+| POST | `/enterprise/add-minimal/<id>` | "Add name & link only" — creates a **separate** `pending` `Agent` row copying just `name`/`url` from the source agent, with `in_stack=True`. The source catalogue row is left untouched (not marked `in_stack`) |
 
 ### Exports
 | Method | Path | Description |
@@ -278,6 +298,35 @@ All three formats export **classified agents only** (status = "classified").
 
 ---
 
+## Enterprise Stack
+
+**Route**: `GET /enterprise` (`enterprise()` in `app.py`) · **Template**: `templates/enterprise.html`
+
+Lets a single user (no multi-tenancy — see [Key Design Decisions](#key-design-decisions)) mark which catalogue agents their firm actually runs, then benchmarks that selection against the full catalogue.
+
+**Page sections, top to bottom:**
+1. **Stat cards** — tools in stack, stage coverage (`X/7`), complexity coverage (`X/4`), and a "Benchmark" card showing `fillable_gaps` (empty cells a commercial tool *could* fill) vs. `dead_gaps` (empty cells with no catalogue solution at all).
+2. **Build your stack** (`#picker`) — a searchable table of every non-rejected agent with a checkbox per row, wrapped in a `.card` for visual parity with the rest of the page. Defaults to a **"Commercial only" filter chip** (removable/re-addable, client-side `data-type` filtering — see [Design System](#design-system)). One `POST /enterprise/save` syncs the whole checked set in one request (not per-row toggles). "+ Add a custom tool" reuses `quick_add()` with `next=enterprise&in_stack=1`.
+3. **Your coverage map** (`#matrix`) — the same Complexity×Stage cartography as `/matrix`, but populated only from `in_stack and status=="classified"` agents. Empty cells render one of three states: filled (agent badges), a **"🔍 Find solutions"** button + popout if `gap_candidates` has entries for that cell, or a plain "no tool yet" note if nothing in the catalogue covers it either.
+4. **Stack composition** — four count-based bar charts (tools per stage / complexity tier / autonomy level / comparative advantage), each bar scaled to the *max within that chart*, not as a percentage of the catalogue — this was a deliberate correction after an earlier version showed a catalogue-relative ratio instead of plain counts.
+5. **Recommended additions** (`#recommendations`) — up to 6 cards, **commercial-only**, ranked by how many empty cells on the user's own map each agent would fill (`reco_score` in `enterprise()`, derived from `gap_candidates` — no separate query).
+
+**Server-side computation (`enterprise()` view), in order:**
+- `stack_matrix[cx][stage]` — the user's own classified+in-stack agents, bucketed like the main matrix.
+- `stack_names` — lowercased names of every agent currently in the stack (full **or** name-only), used to suppress an agent from `gap_candidates` (and therefore from recommendations and the gap-search popout) once the user has already added it under either form.
+- `gap_candidates["{cx}|{stage}"]` — for every **empty** cell, classified catalogue agents that cover it, are not already `in_stack`, and aren't name-suppressed.
+- `reco_score` — folds `gap_candidates` into one count per **commercial** agent ID (how many distinct empty cells it would fill) plus the set of stage keys it would newly cover; sorted desc by count, capped at 6.
+
+**"Add to stack" — two intentionally different actions** (`templates/_macros.html`, `add_to_stack(agent, anchor, size)`):
+| Action | Route | Effect |
+|---|---|---|
+| **+ Add with full details** | `POST /enterprise/toggle/<id>` | Flips `in_stack` on the existing, already-classified catalogue row. Free — the agent already carries a description, rationale, and full classification. |
+| **Add name & link only** | `POST /enterprise/add-minimal/<id>` | Inserts a **new**, separate `pending` `Agent` row with just `name`/`url` copied over. The source catalogue row is left alone. Lets a user note "we use Bloomberg Terminal" without inheriting — or being forced to agree with — the catalogue's classification of it; the user can classify their own copy later via the normal Pipeline → Wizard flow. |
+
+The macro renders both as plain inline buttons (not a Bootstrap dropdown) deliberately: the gap-search popout already sits inside a small `overflow:auto` panel, and a Popper-positioned dropdown menu nested in there would clip exactly the same way an unconfigured popover would (see [In-App Help](#in-app-help--bubbles)).
+
+---
+
 ## Design System
 
 **File**: `ai_agent_classifier/static/css/style.css`
@@ -318,6 +367,13 @@ All three formats export **classified agents only** (status = "classified").
 - `.guide-cat-chip.selected` — category filter chip in Guide Q5, color driven by `--cat-chip-color` custom property set via JS
 - `.guide-cat-label` — small category label shown on Guide result cards
 - `.detail-category-card`, `.detail-category-value` — category block on the agent detail sidebar
+- `.info-icon` — the "?" hover/focus bubble trigger (see [In-App Help](#in-app-help--bubbles)); `.popover` / `.tooltip` CSS-variable overrides re-theme Bootstrap's popovers and tooltips to the dark/copper palette (Bootstrap's own defaults are light-on-dark and don't match)
+- `.form-check-input:checked` — global override so every checkbox/radio in the app uses `var(--accent)` instead of Bootstrap's default blue; added when the Enterprise Stack picker made the mismatch visible, but it fixes every checkbox app-wide (wizard included)
+- `.ent-picker-card`, `.ent-picker-table-wrap`, `.ent-agent-link`, `.ent-type-pill`, `.ent-row-checked` — Enterprise Stack tool-picker table, wrapped in a `.card.shadow-sm` for visual parity with the rest of the page
+- `.ent-filter-chip` / `.ent-filter-chip.active` — the dismissible/re-addable "Commercial only" picker filter
+- `.ent-reco-card`, `.ent-reco-fill-badge`, `.ent-reco-stages` — Recommended Additions cards
+- `.ent-add-btn-full`, `.ent-add-btn-minimal`, `.ent-add-actions-{lg|sm}` — the two "add to stack" choice buttons (spacious on recommendation cards, compact inside the gap-search popout)
+- `.gap-search-btn`, `.gap-panel`, `.gap-candidate` — the matrix's "Find solutions" popout for empty benchmark-matrix cells
 
 ---
 
@@ -328,6 +384,8 @@ The local database (`agents.db`) currently holds **81 agents — 78 classified, 
 Notable entries: AIEQ/EquBot · Numerai · Kavout K-Score · RavenPack · Kensho · AlphaSense · Dataminr · BlackRock Aladdin Copilot · BlackRock AlphaAgents · FinGPT/FinMem · BloombergGPT/ASKB · FactSet Mercury · Morningstar Mo · Goldman Sachs AI Assistant · JPMorgan LLM Suite · JPMorgan LOXM · Hebbia · Morgan Stanley AI Assistant · Morgan Stanley Debrief · Panthera Decision GPS · Shavandi & Khedmati Multi-Agent DRL · MSCI AI Portfolio Insights · Clarity AI · NICE Actimize SURVEIL-X · Behavox · Ayasdi · Blueflame AI · IndexGPT/COIN · ShareWorks/Equity Edge · Citi Sky/Arc · Aiden · TOGGLE Copilot · InvestGPT · Pluto.fi · Portrait Analytics · Terminal X · Bridget/ThemeWise · ARKEN Finance · and more
 
 **URL flag**: ARKEN Finance (ID:37) URL `arkenfinance.com` resolves to a DeFi swap platform, not the AI portfolio construction tool described. Correct URL unverified — requires manual check.
+
+**`agent_type` flag**: Panthera Decision GPS is tagged `commercial` in the seed data, which surfaces it in the Enterprise Stack's commercial-only filter and recommendation module — but it reads elsewhere (e.g. the README's catalogue list, `framework.html`'s product-type examples) as Panthera's own in-house build. Not corrected here since it's a data classification call, not an app bug; flagged for a manual seed-data review.
 
 ---
 
@@ -345,6 +403,11 @@ Notable entries: AIEQ/EquBot · Numerai · Kavout K-Score · RavenPack · Kensho
 - **Dual database backend via `DATABASE_URL`**: `app.py` reads `DATABASE_URL` and falls back to local SQLite if unset; `postgres://` is rewritten to `postgresql://` because SQLAlchemy 1.4+ dropped the old scheme. Lets the same codebase run locally (SQLite) and on Railway (Postgres) with no code changes.
 - **Category migration is unconditional, not additive**: `_migrate_db()` re-applies every `AGENT_CATEGORY_SEED` mapping and clears dissolved/explicitly-uncategorized agents on every startup, so a taxonomy rename/restructure (see "Taxonomy v2" in `DEV_LOG.md`) propagates automatically without a manual data-fix script.
 - **Landing page is the framework explainer, not the matrix**: `/` and `/framework` both render `framework.html`; the matrix moved to `/matrix` (see `DEV_LOG.md`, "Framework as landing page"). Anything that does `url_for('matrix')` still resolves correctly.
+- **No separate "Profile" entity for the Enterprise Stack**: there's exactly one implicit profile, modeled as a single `Agent.in_stack` boolean column rather than a join table or a `Profile` model. Simplest thing that works for a single-user local tool; revisit only if multi-tenancy is ever required.
+- **"Add name & link only" inserts a new row instead of stripping fields off the existing one**: keeps the catalogue's classification of an agent fully intact (other users/views still see it correctly classified) while letting this user's stack carry an unopinionated placeholder under the same name. The dedup-by-name check (`stack_names` in `enterprise()`) is what keeps the original from also reappearing in gap search / recommendations afterward.
+- **Recommendations are computed from `gap_candidates`, not a second pass over the catalogue**: `reco_score` just re-aggregates the dict the gap-search popouts already built, scoped to `agent_type == "commercial"`. One source of truth for "what would help" — the matrix's popout and the recommendation cards can't drift out of sync.
+- **Stack-composition bar charts are intentionally count-based, not catalogue ratios**: an earlier version sized each bar as `your_count / catalogue_count`, which read as "how big a slice of the market you own" rather than "how many tools you have." Bars now scale to the max count *within that chart only*.
+- **Popover/tooltip `container: "body"`**: both are initialized in `app.js` with this option because several trigger icons live inside `overflow:auto` ancestors (the matrix scroll wrapper, the gap-search popout) that would otherwise clip or paint-order the floating bubble underneath page content.
 
 ---
 

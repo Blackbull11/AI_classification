@@ -19,6 +19,8 @@ A fifth dimension — **Agent Type** (commercial / in-house / academic) — is a
 
 A sixth field — **Category Label** (10 functional clusters, CAT-1 through CAT-10) — is tracked for catalogue organization and Agent Finder filtering. It is a Panthera platform addition, not part of the original academic framework.
 
+> **In-app help**: the definitions below for Complexity, Autonomy, and Investment Process Stage are also surfaced directly in the platform as "?" hover/focus bubbles — on the Matrix, the classification Wizard, the Agent Finder, the Pipeline table, the Agent Detail page, and the Enterprise Stack page — so a user doesn't need to read this guide to understand a value they're looking at. The in-app copy is a condensed, example-led version of what's written here; this document remains the canonical, fuller explanation. See `docs/CLAUDE.md` → "In-App Help" for the implementation.
+
 ---
 
 ## Swan Theory — Theoretical Background
