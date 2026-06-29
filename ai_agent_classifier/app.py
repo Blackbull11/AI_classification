@@ -1198,17 +1198,26 @@ UNCATEGORIZED_AGENTS = [
 
 
 def _migrate_db():
-    """Add missing columns and re-apply category assignments from current taxonomy."""
-    from sqlalchemy import text
-    with db.engine.connect() as conn:
-        cols = [row[1] for row in conn.execute(text("PRAGMA table_info(agents)")).fetchall()]
+    """Add missing columns and re-apply category assignments from current taxonomy.
+
+    Uses SQLAlchemy's dialect-agnostic inspector rather than SQLite-only `PRAGMA
+    table_info`, since this also runs against the production PostgreSQL database.
+    Column-add and data-update happen in two separate transactions so a column added
+    in the first is visible (committed) before the second references it.
+    """
+    from sqlalchemy import inspect, text
+
+    inspector = inspect(db.engine)
+    cols = [c["name"] for c in inspector.get_columns("agents")]
+
+    with db.engine.begin() as conn:
         if "category_id" not in cols:
             conn.execute(text("ALTER TABLE agents ADD COLUMN category_id VARCHAR(50)"))
-            conn.commit()
         if "in_stack" not in cols:
-            conn.execute(text("ALTER TABLE agents ADD COLUMN in_stack BOOLEAN DEFAULT 0"))
-            conn.execute(text("UPDATE agents SET in_stack = 0 WHERE in_stack IS NULL"))
-            conn.commit()
+            conn.execute(text("ALTER TABLE agents ADD COLUMN in_stack BOOLEAN DEFAULT FALSE"))
+
+    with db.engine.begin() as conn:
+        conn.execute(text("UPDATE agents SET in_stack = FALSE WHERE in_stack IS NULL"))
         # Unconditionally update all known agent categories (overwrites stale assignments)
         for name, cat_id in AGENT_CATEGORY_SEED.items():
             conn.execute(
@@ -1224,12 +1233,22 @@ def _migrate_db():
                 text("UPDATE agents SET category_id = NULL WHERE name = :name"),
                 {"name": name},
             )
-        conn.commit()
 
+
+# Runs on import — not just `python app.py` — so gunicorn (`gunicorn app:app`, no
+# --preload) also creates/migrates the schema. Without this, a brand-new column
+# (e.g. `in_stack`) never reaches the production database and every request 500s.
+with app.app_context():
+    db.create_all()
+    seed_database(app, db, Agent)
+    try:
+        _migrate_db()
+    except Exception:
+        # Gunicorn runs 2 workers, each importing this module independently (no
+        # --preload), so they can race to add the same column on first boot after a
+        # schema change. Whichever worker loses the race would otherwise crash on
+        # startup even though its sibling already applied the migration successfully.
+        app.logger.exception("Schema migration failed (possibly a benign race between workers)")
 
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
-        seed_database(app, db, Agent)
-        _migrate_db()
     app.run(debug=True, port=5000)
