@@ -123,7 +123,7 @@ The live database contains **77 classified agents** spanning commercial products
 | Layer | Technology |
 |---|---|
 | Web framework | Flask |
-| ORM / DB | SQLAlchemy + SQLite |
+| ORM / DB | PostgreSQL |
 | Frontend | Bootstrap 5.3.3 + vanilla JS |
 | AI auto-classifier | Anthropic Claude API (`claude-opus-4-8`) |
 | Excel export | openpyxl |
